@@ -167,6 +167,8 @@ MonoBehaviour:
   playerRoot: {fileID: 213306522}
   playerCamera: {fileID: 330585545}
   rotationSpeed: 10
+  currentTarget: {fileID: 0}
+  lookInput: {x: 0, y: 0}
   shootingPoint: {fileID: 0}
   bulletTrailMaterial: {fileID: 0}
   bulletPrefab: {fileID: 0}
@@ -189,6 +191,12 @@ MonoBehaviour:
   hitVfx: {fileID: 0}
   ammoText: {fileID: 0}
   reloadCircle: {fileID: 0}
+  currentReloadTime: 0
+  _requestedShoot: 0
+  isFiring: 0
+  _requestedReload: 0
+  isReloading: 0
+  audioManager: {fileID: 0}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -275,13 +283,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0.40453875, y: 0.1419286, z: -0.0637108, w: 0.90119123}
+  m_LocalPosition: {x: -32.3, y: 118.9, z: -99.8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 915482061}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 48.35, y: 17.9, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -472,14 +480,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 713627733}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.40453875, y: 0.1419286, z: -0.0637108, w: 0.90119123}
-  m_LocalPosition: {x: -24.7, y: 91.1, z: -76.2}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1319598449}
   m_Father: {fileID: 2040262726}
-  m_LocalEulerAnglesHint: {x: 48.35, y: 17.9, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &713627735
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -594,52 +602,25 @@ MonoBehaviour:
   cameraTarget: {fileID: 213306522}
   playerLegs: {fileID: 1633249634}
   legRotationSpeed: 8
-  boostVisuals: []
-  boostParticles: []
-  frequency: 5
-  scaleOffset: 0.05
-  baseScale: 0.95
-  walkSpeed: 20
-  walkResponse: 25
-  airSpeed: 15
-  airAcceleration: 90
-  sprintMultiplier: 1.3
-  jumpSpeed: 20
-  coyoteTime: 0.2
-  jumpSustainGravity: 0.4
-  gravity: -90
-  dashSpeed: 40
-  dashBetweenCooldown: 0.2
-  dashRecoveryCooldown: 0.3
-  maxDashes: 2
-  dashes: 2
-  maxBoost: 100
-  boostCapacity: 100
-  boostGain: 2
-  dashBoostLoss: 20
-  sprintBoostLoss: 4
-  jumpBoostLoss: 20
-  boostBarFill: {fileID: 0}
-  boostBarLoss: {fileID: 0}
-  lossLerpSpeed: 2
-  goodboostColor: {r: 0, g: 0, b: 0, a: 0}
-  watchOutColor: {r: 0, g: 0, b: 0, a: 0}
-  criticalColor: {r: 0, g: 0, b: 0, a: 0}
-  M_walkSpeed: 0
-  M_sprintMultiplier: 0
-  M_airSpeed: 0
-  M_airAcceleration: 0
-  M_jumpSpeed: 0
-  M_dashSpeed: 0
-  M_dashBetweenCooldown: 0
-  M_dashRecoveryCooldown: 0
-  M_maxDashes: 0
-  M_maxBoost: 0
-  M_boostGain: 0
-  M_dashBoostLoss: 0
-  M_sprintBoostLoss: 0
-  M_jumpBoostLoss: 0
-  audioManager: {fileID: 0}
+  Stats:
+    WalkSpeed: 18
+    WalkResponse: 2.3
+    SprintMultiplier: 1.6
+    AirSpeed: 15
+    AirAcceleration: 45
+    JumpSpeed: 20
+    CoyoteTime: 0.2
+    JumpSustainGravity: 0.25
+    Gravity: -80
+    DashSpeed: 45
+    DashCooldown: 0.2
+    DashRecoveryTime: 0.3
+    MaxDashes: 2
+    MaxBoost: 2
+    BoostGain: 5
+    SprintBoostLoss: 9
+    JumpBoostLoss: 20
+    DashBoostLoss: 20
 --- !u!114 &859187082
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -750,8 +731,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d46f10b832a4fc7478a32106e773ddb6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attackDamping: 0.5
-  decayDamping: 0.3
+  attackDamping: 1.3
+  decayDamping: 0.6
   strength: 0.015
 --- !u!1 &935471927
 GameObject:
@@ -1095,9 +1076,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   halfLife: 0.075
-  frequency: 18
-  angularDisplacement: 0.2
-  linearDisplacement: 0.05
+  frequency: 2
+  angularDisplacement: 0.1
+  linearDisplacement: 0.01
 --- !u!1 &1343619323
 GameObject:
   m_ObjectHideFlags: 0
@@ -1327,6 +1308,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2040262726}
   - component: {fileID: 2040262727}
+  - component: {fileID: 2040262728}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -1363,11 +1345,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ce6ba6d872adeb40907020e5735f810, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerCharacter: {fileID: 859187081}
+  playerMovement: {fileID: 0}
   playerCamera: {fileID: 713627735}
-  playerGun: {fileID: 213306523}
+  combatSystem: {fileID: 2040262728}
   cameraSpring: {fileID: 1319598450}
   cameraLean: {fileID: 915482062}
+--- !u!114 &2040262728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2040262725}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd9d778418d3d714bb4cb5e744a744c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterRoot: {fileID: 213306522}
+  rotationSpeed: 10
+  shootingPoint: {fileID: 0}
+  muzzlePoint: {fileID: 0}
+  initialLoadout: []
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

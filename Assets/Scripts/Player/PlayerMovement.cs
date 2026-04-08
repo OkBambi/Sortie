@@ -1,9 +1,32 @@
 using UnityEngine;
 using KinematicCharacterController;
-using UnityEngine.UI;
-using System.Collections;
-using Unity.VisualScripting;
+using System;
 
+[Serializable]
+public struct MovementStats
+{
+    public float WalkSpeed;
+    public float WalkResponse;
+    public float SprintMultiplier;
+
+    public float AirSpeed;
+    public float AirAcceleration;
+    public float JumpSpeed;
+    public float CoyoteTime;
+    public float JumpSustainGravity;
+    public float Gravity;
+
+    public float DashSpeed;
+    public float DashCooldown;
+    public float DashRecoveryTime;
+    public int MaxDashes;
+
+    public float MaxBoost;
+    public float BoostGain;
+    public float SprintBoostLoss;
+    public float JumpBoostLoss;
+    public float DashBoostLoss;
+}
 
 public struct CharacterState
 {
@@ -24,414 +47,207 @@ public struct CharacterInput
 
 public class PlayerMovement : MonoBehaviour, ICharacterController
 {
-
-    [Header("Components")]
+    [Header("Core")]
     [SerializeField] private KinematicCharacterMotor motor;
     [SerializeField] private Transform root;
-    [Space]
-
     [SerializeField] private Transform cameraTarget;
-    [Space]
-
-    [Space]
     [SerializeField] private Transform playerLegs;
     [SerializeField] private float legRotationSpeed = 8f;
-    [SerializeField] private GameObject[] boostVisuals;
-    [SerializeField] private ParticleSystem[] boostParticles;
-    [SerializeField] private float frequency = 5f;
-    [SerializeField] private float scaleOffset = 0.05f;
-    [SerializeField] private float baseScale = 0.95f;
 
-    [Header("Speeds")]
-    [SerializeField] private float walkSpeed = 20f;
-    [SerializeField] private float walkResponse = 25f;
+    [Header("Data")]
+    public MovementStats Stats; // Clean, centralized data container
 
-    [SerializeField] private float airSpeed = 15f;
-    [SerializeField] private float airAcceleration = 90f;
-    [Space]
-    [Range(1f, 2f)]
-    [SerializeField] private float sprintMultiplier = 1.3f;
-
-    [Header("Jumping")]
-    [SerializeField] private float jumpSpeed = 20f;
-    [SerializeField] private float coyoteTime = 0.2f;
-    [Range(0f, 1f)]
-    [SerializeField] private float jumpSustainGravity = 0.4f;
-    [SerializeField] private float gravity = -90f;
-    [Space]
-
-    [Header("Dashing")]
-    [SerializeField] private float dashSpeed = 40f;
-    [SerializeField] private float dashBetweenCooldown = 0.2f;
-    [SerializeField] private float dashRecoveryCooldown = 0.3f;
-    [SerializeField] private int maxDashes = 2;
-    [SerializeField] private int dashes = 2;
-
-    [Header("Boost")]
-    [SerializeField] private float maxBoost = 100f;
-    [SerializeField] private float boostCapacity = 100f;
-    [SerializeField] private float boostGain = 2f;
-    [SerializeField] private float dashBoostLoss = 20f;
-    [SerializeField] private float sprintBoostLoss = 4f;
-    [SerializeField] private float jumpBoostLoss = 20f;
-    [Space]
-    [SerializeField] private Image boostBarFill;
-    [SerializeField] private Image boostBarLoss;
-    [SerializeField] private float lossLerpSpeed = 2f;
-    [Space]
-    [SerializeField] private Color goodboostColor;
-    [SerializeField] private Color watchOutColor;
-    [SerializeField] private Color criticalColor;
-
+    // State accessible by other systems (UI, Visuals)
+    public float CurrentBoost { get; private set; }
+    public int CurrentDashes { get; private set; }
+    public bool IsSprinting { get; private set; }
+    public bool IsDashing { get; private set; }
 
     private CharacterState _state;
     private CharacterState _lastState;
-    private CharacterState _tempState;
 
     private Quaternion _requestedRotation;
-
     private Vector3 _requestedMovement;
-
     private bool _requestedJump;
-
     private bool _requestedSustainedJump;
-
     private bool _requestedDash;
-
-    private bool _requestedSprint;
 
     private float _timeSinceUngrounded;
     private float _timeSinceJumpRequest;
     private bool _ungroundedDueToJump;
+    private float _currentDashRecovery;
+    private float _currentDashCooldown;
 
     private Vector3 startPos;
-
-    [Space]
-    [Header("Movement Modified Stats")]
-    [SerializeField] public float M_walkSpeed;
-    [SerializeField] public float M_sprintMultiplier;
-
-    [SerializeField] public float M_airSpeed;
-    [SerializeField] public float M_airAcceleration;
-    [SerializeField] public float M_jumpSpeed;
-
-    [SerializeField] public float M_dashSpeed;
-    [SerializeField] public float M_dashBetweenCooldown;       //these 2 values are not correct, they are timers, not stats, change that
-    [SerializeField] public float M_dashRecoveryCooldown;      //these 2 values are not correct, they are timers, not stats, change that
-    [SerializeField] public int M_maxDashes;
-
-    [SerializeField] public float M_maxBoost;
-    [SerializeField] public float M_boostGain;
-    [SerializeField] public float M_dashBoostLoss;
-    [SerializeField] public float M_sprintBoostLoss;
-    [SerializeField] public float M_jumpBoostLoss;
-
-    [SerializeField] AudioManager audioManager;
-
-    public void ResetPos()
-    {
-        print("Resetting position");
-        motor.SetPosition(startPos);
-    }
 
     public void Initialize()
     {
         startPos = this.transform.position;
-
         _lastState = _state;
-
-        dashes = M_maxDashes;
-        boostCapacity = M_maxBoost;
-
+        CurrentDashes = Stats.MaxDashes;
+        CurrentBoost = Stats.MaxBoost;
         motor.CharacterController = this;
+    }
 
-        audioManager = FindAnyObjectByType<AudioManager>();
-        audioManager.Play("Engine_Hum");
-
-        M_walkSpeed = walkSpeed;
-        M_sprintMultiplier = sprintMultiplier;
-
-        M_airSpeed = airSpeed;
-        M_airAcceleration = airAcceleration;
-        M_jumpSpeed = jumpSpeed;
-
-        M_dashSpeed = dashSpeed;
-        M_dashBetweenCooldown = 0.2f;
-        M_dashRecoveryCooldown = 2f;
-        M_maxDashes = maxDashes;
-
-        M_maxBoost = maxBoost;
-        M_boostGain = boostGain;
-        M_dashBoostLoss = dashBoostLoss;
-        M_sprintBoostLoss = sprintBoostLoss;
-        M_jumpBoostLoss = jumpBoostLoss;
-
+    public void ResetPos()
+    {
+        motor.SetPosition(startPos);
     }
 
     public void UpdateInput(CharacterInput input)
     {
         _requestedRotation = input.Rotation;
 
-        // Get camera forward and right vectors, flattened on the XZ plane
-        Vector3 cameraForward = input.Rotation * Vector3.forward;
+        Transform camTransform = Camera.main != null ? Camera.main.transform : null;
+        Vector3 cameraForward;
+        Vector3 cameraRight;
+
+        if (camTransform != null)
+        {
+            cameraForward = camTransform.forward;
+            cameraRight = camTransform.right;
+        }
+        else
+        {
+            cameraForward = input.Rotation * Vector3.forward;
+            cameraRight = input.Rotation * Vector3.right;
+        }
+
         cameraForward.y = 0f;
         cameraForward.Normalize();
-
-        Vector3 cameraRight = input.Rotation * Vector3.right;
         cameraRight.y = 0f;
         cameraRight.Normalize();
 
-        // Calculate movement relative to the flattened camera vectors
         _requestedMovement = (cameraRight * input.Move.x) + (cameraForward * input.Move.y);
-
-        // Clamp the movement vector to a magnitude of 1 (no funny diag movement tech)
         _requestedMovement = Vector3.ClampMagnitude(_requestedMovement, 1f);
 
         var wasRequestingJump = _requestedJump;
-        _requestedJump = _requestedJump || input.Jump && boostCapacity > M_jumpBoostLoss;
-        if (_requestedJump && !wasRequestingJump)
-        {
-            _timeSinceJumpRequest = 0f;
-        }
+        _requestedJump = _requestedJump || input.Jump && CurrentBoost > Stats.JumpBoostLoss;
+        if (_requestedJump && !wasRequestingJump) _timeSinceJumpRequest = 0f;
 
         _requestedSustainedJump = input.JumpSustain;
-
         _requestedDash = _requestedDash || input.Dash;
-
-        _requestedSprint = input.Sprint && boostCapacity > 0;
-
-    }
-
-    public void BoostVisual(float deltaTime)
-    {
-        if (_requestedSprint || _requestedDash)
-        {
-            foreach (GameObject booster in boostVisuals)
-            {
-                booster.SetActive(true);
-                float scale = baseScale + Mathf.Sin(Time.time * frequency) * scaleOffset;
-                booster.transform.localScale = new Vector3(scale, scale, scale);
-            }
-
-            foreach (ParticleSystem p in boostParticles)
-            {
-                if (!p.isPlaying)
-                    p.Play();
-            }
-        }
-        else
-        {
-            foreach (GameObject booster in boostVisuals)
-            {
-                booster.SetActive(false);
-            }
-
-            foreach (ParticleSystem p in boostParticles)
-            {
-                if (p.isPlaying)
-                    p.Stop();
-            }
-        }
-
-        float boostRatio = boostCapacity / M_maxBoost;
-
-        boostBarFill.fillAmount = boostRatio;
-
-        if (boostCapacity > (M_maxBoost / 2))
-            boostBarFill.color = goodboostColor;
-        else if (boostCapacity > (M_maxBoost / 4))
-            boostBarFill.color = watchOutColor;
-        else
-            boostBarFill.color = criticalColor;
-
-        StopAllCoroutines();
-        StartCoroutine(LerpBarLoss(boostRatio));
-    }
-
-    private IEnumerator LerpBarLoss(float targetFill)
-    {
-        float startFill = boostBarLoss.fillAmount;
-        float elapsedTime = 0f;
-
-        while (elapsedTime < 1f)
-        {
-            elapsedTime += Time.deltaTime * lossLerpSpeed;
-            boostBarLoss.fillAmount = Mathf.Lerp(startFill, targetFill, elapsedTime);
-            yield return null;
-        }
-
-        boostBarLoss.fillAmount = targetFill;
+        IsSprinting = input.Sprint && CurrentBoost > 0;
     }
 
     public void UpdateBody(float deltaTime)
     {
-        if (dashRecoveryCooldown > 0f && dashes < M_maxDashes)
-            dashRecoveryCooldown -= deltaTime;
-        else if (dashRecoveryCooldown <= 0f && dashes < M_maxDashes)
+        // Dash Recovery
+        if (_currentDashRecovery > 0f && CurrentDashes < Stats.MaxDashes)
+            _currentDashRecovery -= deltaTime;
+        else if (_currentDashRecovery <= 0f && CurrentDashes < Stats.MaxDashes)
         {
-            if (dashes < M_maxDashes)
-                dashes++;
-            dashRecoveryCooldown = M_dashRecoveryCooldown;
-        }
-        else if (dashRecoveryCooldown < 0f && dashes == M_maxDashes)
-        {
-            dashRecoveryCooldown = 0f;
+            CurrentDashes++;
+            if (CurrentDashes < Stats.MaxDashes) _currentDashRecovery = Stats.DashRecoveryTime;
         }
 
-        if (dashBetweenCooldown > 0f)
-            dashBetweenCooldown -= deltaTime;
-        else if (dashBetweenCooldown < 0f)
-            dashBetweenCooldown = 0f;
+        // Dash Between Cooldown
+        if (_currentDashCooldown > 0f) _currentDashCooldown -= deltaTime;
+        if (_currentDashCooldown < 0f) _currentDashCooldown = 0f;
 
-        if (dashes > M_maxDashes)
-            dashes = M_maxDashes;
-
-        if (_requestedSprint)
-        {
-            boostCapacity = Mathf.Clamp(boostCapacity - (M_sprintBoostLoss * deltaTime), 0, M_maxBoost);
-        }
+        // Boost Drain/Gain
+        if (IsSprinting)
+            CurrentBoost = Mathf.Clamp(CurrentBoost - (Stats.SprintBoostLoss * deltaTime), 0, Stats.MaxBoost);
         else
-        {
-            boostCapacity = Mathf.Clamp(boostCapacity + (M_boostGain * deltaTime), 0, M_maxBoost);
-        }
+            CurrentBoost = Mathf.Clamp(CurrentBoost + (Stats.BoostGain * deltaTime), 0, Stats.MaxBoost);
     }
 
     public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
     {
         _state.Acceleration = Vector3.zero;
+        IsDashing = false;
 
-        //if on the ground
+        // Ground Movement
         if (motor.GroundingStatus.IsStableOnGround)
         {
             _state.Grounded = true;
             _timeSinceUngrounded = 0f;
             _ungroundedDueToJump = false;
 
-            var groundedMovement = motor.GetDirectionTangentToSurface
-            (
+            var groundedMovement = motor.GetDirectionTangentToSurface(
                 direction: _requestedMovement,
                 surfaceNormal: motor.GroundingStatus.GroundNormal
             ) * _requestedMovement.magnitude;
 
-            //THE SCHMOVEMENT. THE HE. THE SCHMOVER.
-            var targetVelocity = groundedMovement * M_walkSpeed;
+            var targetVelocity = groundedMovement * Stats.WalkSpeed;
+            targetVelocity *= IsSprinting ? Stats.SprintMultiplier : 1f;
 
-            //if sprinting
-            targetVelocity *= (_requestedSprint && boostCapacity > 0) ? M_sprintMultiplier : 1f;
-
-            var moveVelocity = Vector3.Lerp
-            (
+            var moveVelocity = Vector3.Lerp(
                 a: currentVelocity,
                 b: targetVelocity,
-                t: 1f - Mathf.Exp(-walkResponse * deltaTime)
+                t: 1f - Mathf.Exp(-Stats.WalkResponse * deltaTime)
             );
 
             _state.Acceleration = (moveVelocity - currentVelocity) / deltaTime;
-
             currentVelocity = moveVelocity;
         }
-        //GUNDAM AERRIALLLLLLL (in the air)
+        // Aerial Movement
         else
         {
             _timeSinceUngrounded += deltaTime;
 
-            //aerial movement
             if (_requestedMovement.sqrMagnitude > 0f)
             {
-                //requested movement on plane
-                var planarMovement = Vector3.ProjectOnPlane
-                (
-                    vector: _requestedMovement,
-                    planeNormal: motor.CharacterUp
-                ) * _requestedMovement.magnitude;
+                var planarMovement = Vector3.ProjectOnPlane(vector: _requestedMovement, planeNormal: motor.CharacterUp) * _requestedMovement.magnitude;
+                var currentPlanarVelocity = Vector3.ProjectOnPlane(vector: currentVelocity, planeNormal: motor.CharacterUp);
 
-                //current velocity on the movement plane 
-                var currentPlanarVelocity = Vector3.ProjectOnPlane
-                (
-                    vector: currentVelocity,
-                    planeNormal: motor.CharacterUp
-                );
-
-                //calculate movement force
-                var movementForce = planarMovement * M_airAcceleration * deltaTime;
+                var movementForce = planarMovement * Stats.AirAcceleration * deltaTime;
                 var targetPlanarVelocity = currentPlanarVelocity + movementForce;
 
-                //if sprinting
-                targetPlanarVelocity *= (_requestedSprint && boostCapacity > 0) ? M_sprintMultiplier : 1f;
-
-                targetPlanarVelocity = Vector3.ClampMagnitude(targetPlanarVelocity, M_airSpeed);
+                targetPlanarVelocity *= IsSprinting ? Stats.SprintMultiplier : 1f;
+                targetPlanarVelocity = Vector3.ClampMagnitude(targetPlanarVelocity, Stats.AirSpeed);
 
                 currentVelocity += targetPlanarVelocity - currentPlanarVelocity;
             }
 
-            //gravity
-            var effectGravity = gravity;
-            var verticalSpeed = Vector3.Dot(currentVelocity, motor.CharacterUp);
-            if (_requestedSustainedJump && verticalSpeed > 0f)
-                effectGravity *= jumpSustainGravity;
+            var effectGravity = Stats.Gravity;
+            if (_requestedSustainedJump && Vector3.Dot(currentVelocity, motor.CharacterUp) > 0f)
+                effectGravity *= Stats.JumpSustainGravity;
 
             currentVelocity += motor.CharacterUp * effectGravity * deltaTime;
         }
 
-        //i wanna shoop baby
+        // Jumping
         if (_requestedJump)
         {
-            var grounded = motor.GroundingStatus.IsStableOnGround;
-            var canCoyoteJump = _timeSinceUngrounded < coyoteTime && !_ungroundedDueToJump && boostCapacity >= M_jumpBoostLoss;
+            var canCoyoteJump = _timeSinceUngrounded < Stats.CoyoteTime && !_ungroundedDueToJump && CurrentBoost >= Stats.JumpBoostLoss;
 
-            //we JUMPIN
-            if (grounded || canCoyoteJump)
+            if (motor.GroundingStatus.IsStableOnGround || canCoyoteJump)
             {
-                boostCapacity -= M_jumpBoostLoss;
+                CurrentBoost -= Stats.JumpBoostLoss;
                 _requestedJump = false;
-
-                //unstick that thang
                 motor.ForceUnground(time: 0f);
                 _ungroundedDueToJump = true;
                 _state.Grounded = false;
 
-                //Set minimum vertical speed to the jump speed
                 var currentVerticalSpeed = Vector3.Dot(currentVelocity, motor.CharacterUp);
-                var targetVerticalSpeed = Mathf.Max(currentVerticalSpeed, M_jumpSpeed);
-
+                var targetVerticalSpeed = Mathf.Max(currentVerticalSpeed, Stats.JumpSpeed);
                 currentVelocity += motor.CharacterUp * (targetVerticalSpeed - currentVerticalSpeed);
             }
             else
             {
                 _timeSinceJumpRequest += deltaTime;
-
-                //decide whether or not thou can coyote jump
-                var canJumpLater = _timeSinceJumpRequest < coyoteTime;
-                _requestedJump = canJumpLater;
+                _requestedJump = _timeSinceJumpRequest < Stats.CoyoteTime;
             }
         }
 
+        // Dashing
         if (_requestedDash)
         {
-            var canDash = (dashBetweenCooldown == 0f) && (dashes > 0) && boostCapacity >= M_dashBoostLoss;
-
+            var canDash = (_currentDashCooldown == 0f) && (CurrentDashes > 0) && CurrentBoost >= Stats.DashBoostLoss;
             if (canDash)
             {
-                dashBetweenCooldown = M_dashBetweenCooldown;
-                dashes--;
-                boostCapacity -= M_dashBoostLoss;
+                _currentDashCooldown = Stats.DashCooldown;
+                CurrentDashes--;
+                CurrentBoost -= Stats.DashBoostLoss;
                 _requestedDash = false;
+                IsDashing = true;
 
-                if (audioManager == null)
-                {
-                    audioManager = FindAnyObjectByType<AudioManager>();
-                }
-                audioManager.Play("Dash");
+                var dashDirection = _requestedMovement.sqrMagnitude == 0f ?
+                    Vector3.ProjectOnPlane(root.forward, motor.CharacterUp).normalized :
+                    _requestedMovement.normalized;
 
-                var dashDirection = _requestedMovement.normalized;
-
-                if (dashDirection.sqrMagnitude == 0f)
-                {
-                    dashDirection = Vector3.ProjectOnPlane(root.forward, motor.CharacterUp).normalized;
-                }
-
-                var dashVelocity = dashDirection * M_dashSpeed;
-
+                var dashVelocity = dashDirection * Stats.DashSpeed;
                 currentVelocity = new Vector3(dashVelocity.x, currentVelocity.y, dashVelocity.z);
             }
             else
@@ -443,12 +259,7 @@ public class PlayerMovement : MonoBehaviour, ICharacterController
 
     public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
     {
-        var forward = Vector3.ProjectOnPlane
-        (
-            _requestedRotation * Vector3.forward,
-            motor.CharacterUp
-        );
-
+        var forward = Vector3.ProjectOnPlane(_requestedRotation * Vector3.forward, motor.CharacterUp);
         if (forward != Vector3.zero)
             currentRotation = Quaternion.LookRotation(forward, motor.CharacterUp);
 
@@ -459,37 +270,16 @@ public class PlayerMovement : MonoBehaviour, ICharacterController
         }
     }
 
-
-
-    public void BeforeCharacterUpdate(float deltaTime)
-    {
-
-    }
-
+    // Required Interface Methods
+    public void BeforeCharacterUpdate(float deltaTime) { }
     public void PostGroundingUpdate(float deltaTime) { }
-
-    public void AfterCharacterUpdate(float deltaTime)
-    {
-        // Stuff can happen after move acceleration (walk/slide movement) is applied to current velocity that
-        // lowers the velocity, so after the character updates make sure move acceleration does not exceed
-        // the total acceleration.
-        //var totalAcceleration = (_state.Velocity - _lastState.Velocity) / deltaTime;
-        //_state.Acceleration = Vector3.ClampMagnitude(_state.Acceleration, totalAcceleration.magnitude);
-    }
-
-
+    public void AfterCharacterUpdate(float deltaTime) { }
     public void OnGroundHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport) { }
-
     public void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport) { }
-
     public bool IsColliderValidForCollisions(Collider coll) => true;
-
     public void OnDiscreteCollisionDetected(Collider hitCollider) { }
-
     public void ProcessHitStabilityReport(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, Vector3 atCharacterPosition, Quaternion atCharacterRotation, ref HitStabilityReport hitStabilityReport) { }
 
     public Transform GetCameraTarget() => cameraTarget;
-
     public CharacterState GetState() => _state;
-    public CharacterState GetLastState() => _lastState;
 }

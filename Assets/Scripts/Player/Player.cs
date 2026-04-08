@@ -1,31 +1,27 @@
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    [SerializeField] private PlayerMovement playerCharacter;
+    [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private PlayerCamera playerCamera;
-    [SerializeField] private PlayerGun playerGun;
+    [SerializeField] private CombatSystem combatSystem;
     [Space]
     [SerializeField] private CameraSpring cameraSpring;
     [SerializeField] private CameraLean cameraLean;
     [Space]
 
     private PlayerActionInputs _inputActions;
-    //[Space]
-    //[SerializeField] public List<Upgrade> upgrades //these are scripatbel objects that get generated and added  to the player?
-    //nah thats way too complicated, basically, we are gonna have an upgrades script that holds a bunch of values just to view them later
-    //the upgrade script will be connected to the other player components and upgrade their M_ values, not the base values
+    private Camera _mainCamera; // Cached reference for aiming
 
     void Start()
     {
         _inputActions = new PlayerActionInputs();
         _inputActions.Enable();
 
-        //initialize other scripts
-        playerCharacter.Initialize();
-        playerCamera.Initialize(playerCharacter.GetCameraTarget());
+        _mainCamera = Camera.main;
+
+        playerMovement.Initialize();
+        playerCamera.Initialize(playerMovement.GetCameraTarget());
         cameraSpring.Initialize();
         cameraLean.Initialize();
     }
@@ -40,11 +36,11 @@ public class Player : MonoBehaviour
         var input = _inputActions.Player;
         var deltaTime = Time.deltaTime;
 
-        //Get camera input and update Cam Rotation
+        // Camera Update
         var cameraInput = new CameraInput { Look = input.Look.ReadValue<Vector2>() };
         playerCamera.UpdateRotation(cameraInput);
 
-        //Get character input and update it
+        // Movement Update
         var characterInput = new CharacterInput
         {
             Rotation = playerCamera.transform.rotation,
@@ -54,27 +50,41 @@ public class Player : MonoBehaviour
             Dash = input.Dash.WasPressedThisFrame(),
             Sprint = input.Sprint.IsPressed()
         };
-        playerCharacter.UpdateInput(characterInput);
-        playerCharacter.UpdateBody(deltaTime);
-        playerCharacter.BoostVisual(deltaTime);
+        playerMovement.UpdateInput(characterInput);
+        playerMovement.UpdateBody(deltaTime);
+
+
+        //ill make combat input soon :tm:
+        int requestedSlot = -1;
+        if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha1)) requestedSlot = 0;
+        if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha2)) requestedSlot = 1;
 
         var combatInput = new CombatInput
         {
             Shoot = input.Attack.IsPressed(),
-            Reload = input.Reload.WasPressedThisFrame()
+            Reload = input.Reload.WasPressedThisFrame(),
+            NumberKeyMap = requestedSlot
         };
 
-        playerGun.RotateGunTowardsMouse();
-        playerGun.UseWeapon(combatInput);
+        if (_mainCamera != null)
+        {
+            Ray ray = _mainCamera.ScreenPointToRay(UnityEngine.Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                Transform target = hit.transform.GetComponent<ITarget>() != null ? hit.transform : null;
+
+                combatSystem.UpdateAim(hit.point, target);
+            }
+        }
+
+        combatSystem.ProcessCombat(combatInput);
     }
 
     void LateUpdate()
     {
         var deltaTime = Time.deltaTime;
-
-        var cameraTarget = playerCharacter.GetCameraTarget();
-
-        var state = playerCharacter.GetState();
+        var cameraTarget = playerMovement.GetCameraTarget();
+        var state = playerMovement.GetState();
 
         playerCamera.UpdatePosition(cameraTarget);
         cameraSpring.UpdateSpring(deltaTime, cameraTarget.up);
