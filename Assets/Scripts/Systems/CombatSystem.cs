@@ -8,21 +8,21 @@ public struct CombatInput
     public bool Shoot;
     public bool Reload;
     public int NumberKeyMap;
+    public Ray AimRay; // Passed from Player
 }
 
 // Data passed to the weapon so it knows where to spawn things and can run Coroutines
 public struct WeaponContext
 {
-    public MonoBehaviour Runner;       // For starting coroutines (like trails/delays)
-    public Transform PlayerRoot;       // To know who is attacking
-    public Transform ShootingPoint;    // The origin of aim
-    public Transform MuzzlePoint;      // Where visuals spawn
-    public Transform CurrentTarget;    // The locked-on target (if any)
-    public Vector3 TargetPoint;        // The exact point the player aimed at
-    public AudioManager Audio;         // To play sounds
+    public MonoBehaviour Runner;
+    public Transform PlayerRoot;
+    public Transform ShootingPoint;
+    public Transform MuzzlePoint;
+    public Transform CurrentTarget;
+    public Vector3 TargetPoint;
+    public AudioManager Audio;
 }
 
-// Runtime state of a specific weapon in a slot
 [Serializable]
 public class WeaponSlot
 {
@@ -48,6 +48,16 @@ public class CombatSystem : MonoBehaviour
     [SerializeField] private bool flipTorsoRotation = false;
     [SerializeField] private float rotationSpeed = 15f;
 
+    [Header("Aim & Lock-On Settings")]
+    [SerializeField] private float hoverRadius = 2f;
+    [SerializeField] private float lockOnTimeRequired = 0.5f;
+    [SerializeField] private float lockOnMaxDistance = 50f;
+    [SerializeField] private LayerMask targetLayer;
+
+    [Header("Visuals")]
+    [Tooltip("Assign a UI/Sprite object in the scene to act as the lock-on reticle")]
+    [SerializeField] private GameObject lockOnIndicator;
+
     [Header("Shooting Points")]
     [SerializeField] private Transform shootingPoint;
     [SerializeField] private Transform muzzlePoint;
@@ -57,9 +67,13 @@ public class CombatSystem : MonoBehaviour
     private List<WeaponSlot> loadoutSlots = new List<WeaponSlot>();
     private int activeSlotIndex = 0;
 
-    private Transform currentTarget;
-    private Vector3 currentTargetPoint;
     private AudioManager audioManager;
+
+    // Aiming State
+    private ITarget hoveringTarget;
+    private float currentHoverTime = 0f;
+    private ITarget lockedTarget;
+    private Vector3 currentTargetPoint;
 
     void Start()
     {
@@ -79,32 +93,154 @@ public class CombatSystem : MonoBehaviour
         return loadoutSlots[activeSlotIndex];
     }
 
-    public void UpdateAim(Vector3 targetPoint, Transform targetTransform = null)
+    private void HandleAimingAndLockOn(CombatInput input)
     {
-        var activeWeapon = GetActiveWeapon();
-        // Return if we are missing the torso reference
-        if (activeWeapon == null || characterRoot == null || torso == null) return;
+        if (characterRoot == null || torso == null) return;
 
-        currentTarget = targetTransform;
-        currentTargetPoint = targetPoint;
+        // 1. Hover & Lock-On Logic
+        if (Physics.SphereCast(input.AimRay, hoverRadius, out RaycastHit hit, Mathf.Infinity, targetLayer))
+        {
+            ITarget hitTarget = hit.collider.GetComponentInParent<ITarget>();
 
-        // Calculate direction from the TORSO, not the root
-        Vector3 direction = (targetPoint - torso.position).normalized;
+            if (hitTarget != null && hitTarget.IsValid)
+            {
+                if (hitTarget == hoveringTarget)
+                {
+                    currentHoverTime += Time.deltaTime;
+                    if (currentHoverTime >= lockOnTimeRequired && lockedTarget != hitTarget)
+                    {
+                        lockedTarget = hitTarget; // LOCK ON
+                        Debug.Log($"<color=green>[CombatSystem] Locked onto: {lockedTarget.Transform.name}</color>");
+                    }
+                }
+                else
+                {
+                    hoveringTarget = hitTarget;
+                    currentHoverTime = 0f;
+                }
+            }
+        }
+        else
+        {
+            hoveringTarget = null;
+            currentHoverTime = 0f;
+        }
+
+        // 2. Break Lock-On Logic
+        if (lockedTarget != null)
+        {
+            float dist = Vector3.Distance(characterRoot.position, lockedTarget.Transform.position);
+
+            if (!lockedTarget.IsValid || dist > lockOnMaxDistance || (hoveringTarget != null && hoveringTarget != lockedTarget && currentHoverTime >= lockOnTimeRequired))
+            {
+                Debug.Log($"<color=red>[CombatSystem] Lost lock on: {lockedTarget.Transform.name}</color>");
+                lockedTarget = null;
+            }
+        }
+
+        // --- Visual Indicator Update ---
+        if (lockOnIndicator != null)
+        {
+            if (lockedTarget != null)
+            {
+                if (!lockOnIndicator.activeSelf) lockOnIndicator.SetActive(true);
+
+                // Move indicator to target. We add a little bit of Y offset so it hovers near their center/head
+                lockOnIndicator.transform.position = lockedTarget.Transform.position + (Vector3.up * 1.5f);
+
+                // Make the indicator face the camera
+                if (Camera.main != null)
+                {
+                    Vector3 lookDir = lockOnIndicator.transform.position - Camera.main.transform.position;
+                    lockOnIndicator.transform.rotation = Quaternion.LookRotation(lookDir);
+                }
+            }
+            else
+            {
+                if (lockOnIndicator.activeSelf) lockOnIndicator.SetActive(false);
+            }
+        }
+        // -------------------------------
+
+        // 3. Determine Final Aim Point
+        if (lockedTarget != null)
+        {
+            float projSpeed = 100f; // Default fallback speed
+
+            // Try to extract actual bullet speed if using ProjectileWeaponData
+            if (GetActiveWeapon()?.Data is ProjectileWeaponData projData)
+                projSpeed = projData.BulletForce;
+
+            // Offset the aim point so we shoot at center mass (chest), not their feet!
+            Vector3 targetCenterMass = lockedTarget.Transform.position + (Vector3.up * 1.0f);
+
+            currentTargetPoint = CalculateInterceptCourse(
+                shootingPoint.position,
+                targetCenterMass,
+                lockedTarget.Velocity,
+                projSpeed
+            );
+        }
+        else
+        {
+            // Free Aim: Raycast against the environment so we can aim up at walls or down off ledges
+            if (Physics.Raycast(input.AimRay, out RaycastHit envHit, Mathf.Infinity))
+            {
+                currentTargetPoint = envHit.point;
+            }
+            else
+            {
+                // Ground plane aiming fallback (if aiming off into the sky)
+                Plane groundPlane = new Plane(Vector3.up, characterRoot.position);
+                if (groundPlane.Raycast(input.AimRay, out float hitDistance))
+                {
+                    currentTargetPoint = input.AimRay.GetPoint(hitDistance);
+                }
+                else
+                {
+                    currentTargetPoint = input.AimRay.GetPoint(50f);
+                }
+            }
+        }
+
+        // 4. Rotate Torso
+        Vector3 direction = (currentTargetPoint - torso.position).normalized;
         direction.y = 0f;
 
         if (direction != Vector3.zero)
         {
             if (flipTorsoRotation) direction = -direction;
-
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            // ROTATE THE TORSO, not the entire player hierarchy
-            torso.rotation = Quaternion.Lerp(torso.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+            torso.rotation = Quaternion.Lerp(torso.rotation, Quaternion.LookRotation(direction), Time.deltaTime * rotationSpeed);
         }
+    }
+
+    private Vector3 CalculateInterceptCourse(Vector3 shooterPos, Vector3 targetPos, Vector3 targetVel, float projSpeed)
+    {
+        Vector3 dirToTarget = targetPos - shooterPos;
+
+        float a = Vector3.Dot(targetVel, targetVel) - (projSpeed * projSpeed);
+        float b = 2f * Vector3.Dot(targetVel, dirToTarget);
+        float c = Vector3.Dot(dirToTarget, dirToTarget);
+
+        float determinant = (b * b) - (4f * a * c);
+
+        if (determinant > 0f)
+        {
+            float t1 = (-b + Mathf.Sqrt(determinant)) / (2f * a);
+            float t2 = (-b - Mathf.Sqrt(determinant)) / (2f * a);
+            float t = (t1 > 0f && t2 > 0f) ? Mathf.Min(t1, t2) : Mathf.Max(t1, t2);
+
+            if (t > 0f) return targetPos + (targetVel * t);
+        }
+
+        return targetPos;
     }
 
     public void ProcessCombat(CombatInput input)
     {
         if (loadoutSlots.Count == 0) return;
+
+        HandleAimingAndLockOn(input);
 
         // Weapon Switching
         if (input.NumberKeyMap >= 0 && input.NumberKeyMap < loadoutSlots.Count && input.NumberKeyMap != activeSlotIndex)
@@ -137,14 +273,13 @@ public class CombatSystem : MonoBehaviour
     {
         weapon.CurrentAmmo--;
 
-        // Build the context package
         WeaponContext context = new WeaponContext
         {
             Runner = this,
             PlayerRoot = characterRoot,
             ShootingPoint = shootingPoint,
             MuzzlePoint = muzzlePoint,
-            CurrentTarget = currentTarget,
+            CurrentTarget = lockedTarget?.Transform,
             TargetPoint = currentTargetPoint,
             Audio = audioManager
         };
@@ -155,10 +290,7 @@ public class CombatSystem : MonoBehaviour
     private IEnumerator ReloadRoutine(WeaponSlot weapon)
     {
         weapon.IsReloading = true;
-        // TODO: UI System will read weapon.IsReloading to show the circle
-
         yield return new WaitForSeconds(weapon.Data.ReloadTime);
-
         weapon.CurrentAmmo = weapon.Data.MaxAmmo;
         weapon.IsReloading = false;
     }

@@ -58,32 +58,17 @@ public class Player : MonoBehaviour
         if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha1)) requestedSlot = 0;
         if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha2)) requestedSlot = 1;
 
+        Ray screenRay = _mainCamera != null
+            ? _mainCamera.ScreenPointToRay(UnityEngine.Input.mousePosition)
+            : new Ray(transform.position, transform.forward);
+
         var combatInput = new CombatInput
         {
             Shoot = input.Attack.IsPressed(),
             Reload = input.Reload.WasPressedThisFrame(),
-            NumberKeyMap = requestedSlot
+            NumberKeyMap = requestedSlot,
+            AimRay = screenRay
         };
-
-        if (_mainCamera != null)
-        {
-            Plane groundPlane = new Plane(Vector3.up, playerMovement.transform.position);
-            Ray ray = _mainCamera.ScreenPointToRay(UnityEngine.Input.mousePosition);
-
-            if (groundPlane.Raycast(ray, out float hitDistance))
-            {
-                Vector3 hitPoint = ray.GetPoint(hitDistance);
-
-                Transform target = null;
-                if (Physics.Raycast(ray, out RaycastHit hit))
-                {
-                    if (hit.transform.GetComponent<ITarget>() != null)
-                        target = hit.transform;
-                }
-
-                combatSystem.UpdateAim(hitPoint, target);
-            }
-        }
 
         combatSystem.ProcessCombat(combatInput);
     }

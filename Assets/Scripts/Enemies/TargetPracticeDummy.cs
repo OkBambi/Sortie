@@ -12,6 +12,7 @@ public class TargetPracticeDummy : BaseEnemy
     public Renderer dummyRenderer;
     [Tooltip("The shader property name for the main color. Usually _BaseColor in URP or _Color")]
     public string colorPropertyName = "_BaseColor";
+    public float whiteFlashDuration = 0.02f;
     public Color hitColor = new Color(1f, 0.5f, 0f);
     public float feedbackDuration = 0.5f;
     public float wobbleIntensity = 20f;
@@ -91,7 +92,15 @@ public class TargetPracticeDummy : BaseEnemy
 
             if (dummyRenderer != null && dummyRenderer.material.HasProperty(colorPropertyName))
             {
-                dummyRenderer.material.SetColor(colorPropertyName, Color.Lerp(hitColor, originalColor, t));
+                if (elapsed < whiteFlashDuration)
+                {
+                    dummyRenderer.material.SetColor(colorPropertyName, Color.white);
+                }
+                else
+                {
+                    float tColor = (elapsed - whiteFlashDuration) / (feedbackDuration - whiteFlashDuration);
+                    dummyRenderer.material.SetColor(colorPropertyName, Color.Lerp(hitColor, originalColor, tColor));
+                }
             }
 
             float damper = 1f - t;
