@@ -15,11 +15,12 @@ public class ProjectileWeaponData : WeaponData
 
     public override void PerformAttack(WeaponContext ctx)
     {
-        Vector3 direction = ctx.CurrentTarget != null ?
-            (ctx.CurrentTarget.position - ctx.ShootingPoint.position).normalized :
-            ctx.ShootingPoint.forward;
+        Vector3 targetPos = ctx.CurrentTarget != null ? ctx.CurrentTarget.position : ctx.TargetPoint;
+        Vector3 direction = (targetPos - ctx.ShootingPoint.position);
 
-        // Visuals
+        direction.y = 0f;
+        direction.Normalize();
+
         if (MuzzleFlashPrefab != null)
         {
             GameObject flash = Instantiate(MuzzleFlashPrefab, ctx.MuzzlePoint.position, ctx.MuzzlePoint.rotation, ctx.MuzzlePoint);
@@ -41,30 +42,5 @@ public class ProjectileWeaponData : WeaponData
         }
 
         Destroy(bullet, 5f);
-
-        // Trails
-        if (BulletTrailMaterial != null)
-        {
-            Vector3 endPos = Physics.Raycast(ctx.ShootingPoint.position, direction, out RaycastHit hit, Range)
-                ? hit.point
-                : ctx.MuzzlePoint.position + direction * Range;
-
-            ctx.Runner.StartCoroutine(CreateBulletTrail(ctx.MuzzlePoint.position, endPos));
-        }
-    }
-
-    private IEnumerator CreateBulletTrail(Vector3 start, Vector3 end)
-    {
-        yield return new WaitForSeconds(0.025f);
-        GameObject line = new GameObject("BulletTrail");
-        LineRenderer lr = line.AddComponent<LineRenderer>();
-        lr.startWidth = 0.05f;
-        lr.endWidth = 0.05f;
-        lr.positionCount = 2;
-        lr.SetPosition(0, start);
-        lr.SetPosition(1, end);
-        lr.material = BulletTrailMaterial;
-
-        Destroy(line, 0.02f);
     }
 }

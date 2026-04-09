@@ -7,7 +7,7 @@ public struct CombatInput
 {
     public bool Shoot;
     public bool Reload;
-    public int NumberKeyMap; // E.g., 1, 2, 3 to switch weapons
+    public int NumberKeyMap;
 }
 
 // Data passed to the weapon so it knows where to spawn things and can run Coroutines
@@ -18,6 +18,7 @@ public struct WeaponContext
     public Transform ShootingPoint;    // The origin of aim
     public Transform MuzzlePoint;      // Where visuals spawn
     public Transform CurrentTarget;    // The locked-on target (if any)
+    public Vector3 TargetPoint;        // The exact point the player aimed at
     public AudioManager Audio;         // To play sounds
 }
 
@@ -41,8 +42,11 @@ public class WeaponSlot
 public class CombatSystem : MonoBehaviour
 {
     [Header("Aiming")]
-    [SerializeField] private Transform characterRoot; 
-    [SerializeField] private float rotationSpeed = 10f;
+    [Tooltip("The base of the character (used for calculating source of damage)")]
+    [SerializeField] private Transform characterRoot;
+    [SerializeField] private Transform torso;
+    [SerializeField] private bool flipTorsoRotation = false;
+    [SerializeField] private float rotationSpeed = 15f;
 
     [Header("Shooting Points")]
     [SerializeField] private Transform shootingPoint;
@@ -54,6 +58,7 @@ public class CombatSystem : MonoBehaviour
     private int activeSlotIndex = 0;
 
     private Transform currentTarget;
+    private Vector3 currentTargetPoint;
     private AudioManager audioManager;
 
     void Start()
@@ -77,17 +82,23 @@ public class CombatSystem : MonoBehaviour
     public void UpdateAim(Vector3 targetPoint, Transform targetTransform = null)
     {
         var activeWeapon = GetActiveWeapon();
-        if (activeWeapon == null || characterRoot == null) return;
+        // Return if we are missing the torso reference
+        if (activeWeapon == null || characterRoot == null || torso == null) return;
 
         currentTarget = targetTransform;
+        currentTargetPoint = targetPoint;
 
-        Vector3 direction = (targetPoint - characterRoot.position).normalized;
+        // Calculate direction from the TORSO, not the root
+        Vector3 direction = (targetPoint - torso.position).normalized;
         direction.y = 0f;
 
         if (direction != Vector3.zero)
         {
+            if (flipTorsoRotation) direction = -direction;
+
             Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+            // ROTATE THE TORSO, not the entire player hierarchy
+            torso.rotation = Quaternion.Lerp(torso.rotation, targetRotation, Time.deltaTime * rotationSpeed);
         }
     }
 
@@ -134,6 +145,7 @@ public class CombatSystem : MonoBehaviour
             ShootingPoint = shootingPoint,
             MuzzlePoint = muzzlePoint,
             CurrentTarget = currentTarget,
+            TargetPoint = currentTargetPoint,
             Audio = audioManager
         };
 

@@ -53,8 +53,7 @@ public class Player : MonoBehaviour
         playerMovement.UpdateInput(characterInput);
         playerMovement.UpdateBody(deltaTime);
 
-
-        //ill make combat input soon :tm:
+        //ill make proper inputs SOON :TM:
         int requestedSlot = -1;
         if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha1)) requestedSlot = 0;
         if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha2)) requestedSlot = 1;
@@ -68,12 +67,21 @@ public class Player : MonoBehaviour
 
         if (_mainCamera != null)
         {
+            Plane groundPlane = new Plane(Vector3.up, playerMovement.transform.position);
             Ray ray = _mainCamera.ScreenPointToRay(UnityEngine.Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit))
-            {
-                Transform target = hit.transform.GetComponent<ITarget>() != null ? hit.transform : null;
 
-                combatSystem.UpdateAim(hit.point, target);
+            if (groundPlane.Raycast(ray, out float hitDistance))
+            {
+                Vector3 hitPoint = ray.GetPoint(hitDistance);
+
+                Transform target = null;
+                if (Physics.Raycast(ray, out RaycastHit hit))
+                {
+                    if (hit.transform.GetComponent<ITarget>() != null)
+                        target = hit.transform;
+                }
+
+                combatSystem.UpdateAim(hitPoint, target);
             }
         }
 

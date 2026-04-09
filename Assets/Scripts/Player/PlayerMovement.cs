@@ -3,29 +3,38 @@ using KinematicCharacterController;
 using System;
 
 [Serializable]
-public struct MovementStats
+public class MovementStats
 {
-    public float WalkSpeed;
-    public float WalkResponse;
-    public float SprintMultiplier;
+    [Header("Mecha Ground Movement")]
+    public float BaseSpeed = 18f;
+    public float SprintSpeed = 35f;
+    [Tooltip("How fast thrusters get you to top speed/change direction")]
+    public float GroundAcceleration = 8f;
+    [Tooltip("How much you slide when letting go of the controls (Lower = more ice-skating)")]
+    public float GroundFriction = 3f;
 
-    public float AirSpeed;
-    public float AirAcceleration;
-    public float JumpSpeed;
-    public float CoyoteTime;
-    public float JumpSustainGravity;
-    public float Gravity;
+    [Header("Mecha Aerial Movement")]
+    public float AirSpeed = 25f;
+    public float AirAcceleration = 5f;
+    public float JumpSpeed = 20f;
+    public float CoyoteTime = 0.2f;
+    public float JumpSustainGravity = 0.4f;
+    public float Gravity = -90f;
 
-    public float DashSpeed;
-    public float DashCooldown;
-    public float DashRecoveryTime;
-    public int MaxDashes;
+    [Header("Quick Boost (Dash)")]
+    public float DashSpeed = 50f;
+    [Tooltip("How long the pure dash momentum lasts before normal physics take over")]
+    public float DashDuration = 0.15f;
+    public float DashCooldown = 0.25f;
+    public float DashRecoveryTime = 1.5f;
+    public int MaxDashes = 2;
 
-    public float MaxBoost;
-    public float BoostGain;
-    public float SprintBoostLoss;
-    public float JumpBoostLoss;
-    public float DashBoostLoss;
+    [Header("Energy/Boost Capacity")]
+    public float MaxBoost = 100f;
+    public float BoostGain = 15f;
+    public float SprintBoostLoss = 10f;
+    public float JumpBoostLoss = 20f;
+    public float DashBoostLoss = 25f;
 }
 
 public struct CharacterState
@@ -52,16 +61,16 @@ public class PlayerMovement : MonoBehaviour, ICharacterController
     [SerializeField] private Transform root;
     [SerializeField] private Transform cameraTarget;
     [SerializeField] private Transform playerLegs;
-    [SerializeField] private float legRotationSpeed = 8f;
+    [SerializeField] private float legRotationSpeed = 12f;
 
     [Header("Data")]
-    public MovementStats Stats; // Clean, centralized data container
+    public MovementStats Stats = new MovementStats();
 
     // State accessible by other systems (UI, Visuals)
     public float CurrentBoost { get; private set; }
     public int CurrentDashes { get; private set; }
     public bool IsSprinting { get; private set; }
-    public bool IsDashing { get; private set; }
+    public bool IsDashing { get { return _dashTimer > 0f; } }
 
     private CharacterState _state;
     private CharacterState _lastState;
@@ -75,8 +84,11 @@ public class PlayerMovement : MonoBehaviour, ICharacterController
     private float _timeSinceUngrounded;
     private float _timeSinceJumpRequest;
     private bool _ungroundedDueToJump;
+
     private float _currentDashRecovery;
     private float _currentDashCooldown;
+    private float _dashTimer;
+    private Vector3 _dashDirection;
 
     private Vector3 startPos;
 
@@ -86,6 +98,7 @@ public class PlayerMovement : MonoBehaviour, ICharacterController
         _lastState = _state;
         CurrentDashes = Stats.MaxDashes;
         CurrentBoost = Stats.MaxBoost;
+        _currentDashRecovery = Stats.DashRecoveryTime;
         motor.CharacterController = this;
     }
 
@@ -122,31 +135,38 @@ public class PlayerMovement : MonoBehaviour, ICharacterController
         _requestedMovement = Vector3.ClampMagnitude(_requestedMovement, 1f);
 
         var wasRequestingJump = _requestedJump;
-        _requestedJump = _requestedJump || input.Jump && CurrentBoost > Stats.JumpBoostLoss;
+        _requestedJump = _requestedJump || (input.Jump && CurrentBoost >= Stats.JumpBoostLoss);
         if (_requestedJump && !wasRequestingJump) _timeSinceJumpRequest = 0f;
 
         _requestedSustainedJump = input.JumpSustain;
         _requestedDash = _requestedDash || input.Dash;
-        IsSprinting = input.Sprint && CurrentBoost > 0;
+
+        // Only allow sprint if we have energy and are actually trying to move
+        IsSprinting = input.Sprint && CurrentBoost > 0 && _requestedMovement.sqrMagnitude > 0.1f;
     }
 
     public void UpdateBody(float deltaTime)
     {
         // Dash Recovery
-        if (_currentDashRecovery > 0f && CurrentDashes < Stats.MaxDashes)
-            _currentDashRecovery -= deltaTime;
-        else if (_currentDashRecovery <= 0f && CurrentDashes < Stats.MaxDashes)
+        if (CurrentDashes < Stats.MaxDashes)
         {
-            CurrentDashes++;
-            if (CurrentDashes < Stats.MaxDashes) _currentDashRecovery = Stats.DashRecoveryTime;
+            _currentDashRecovery -= deltaTime;
+            if (_currentDashRecovery <= 0f)
+            {
+                CurrentDashes++;
+                _currentDashRecovery = Stats.DashRecoveryTime;
+            }
+        }
+        else
+        {
+            _currentDashRecovery = Stats.DashRecoveryTime;
         }
 
-        // Dash Between Cooldown
         if (_currentDashCooldown > 0f) _currentDashCooldown -= deltaTime;
-        if (_currentDashCooldown < 0f) _currentDashCooldown = 0f;
+        if (_dashTimer > 0f) _dashTimer -= deltaTime;
 
         // Boost Drain/Gain
-        if (IsSprinting)
+        if (IsSprinting || IsDashing)
             CurrentBoost = Mathf.Clamp(CurrentBoost - (Stats.SprintBoostLoss * deltaTime), 0, Stats.MaxBoost);
         else
             CurrentBoost = Mathf.Clamp(CurrentBoost + (Stats.BoostGain * deltaTime), 0, Stats.MaxBoost);
@@ -155,70 +175,83 @@ public class PlayerMovement : MonoBehaviour, ICharacterController
     public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
     {
         _state.Acceleration = Vector3.zero;
-        IsDashing = false;
 
-        // Ground Movement
-        if (motor.GroundingStatus.IsStableOnGround)
+        if (IsDashing)
         {
-            _state.Grounded = true;
-            _timeSinceUngrounded = 0f;
-            _ungroundedDueToJump = false;
+            Vector3 dashVel = _dashDirection * Stats.DashSpeed;
 
-            var groundedMovement = motor.GetDirectionTangentToSurface(
-                direction: _requestedMovement,
-                surfaceNormal: motor.GroundingStatus.GroundNormal
-            ) * _requestedMovement.magnitude;
+            if (!motor.GroundingStatus.IsStableOnGround)
+                currentVelocity += motor.CharacterUp * Stats.Gravity * deltaTime;
 
-            var targetVelocity = groundedMovement * Stats.WalkSpeed;
-            targetVelocity *= IsSprinting ? Stats.SprintMultiplier : 1f;
-
-            var moveVelocity = Vector3.Lerp(
-                a: currentVelocity,
-                b: targetVelocity,
-                t: 1f - Mathf.Exp(-Stats.WalkResponse * deltaTime)
-            );
-
-            _state.Acceleration = (moveVelocity - currentVelocity) / deltaTime;
-            currentVelocity = moveVelocity;
+            currentVelocity = new Vector3(dashVel.x, currentVelocity.y, dashVel.z);
         }
-        // Aerial Movement
         else
         {
-            _timeSinceUngrounded += deltaTime;
-
-            if (_requestedMovement.sqrMagnitude > 0f)
+            // muv luv ground
+            if (motor.GroundingStatus.IsStableOnGround)
             {
-                var planarMovement = Vector3.ProjectOnPlane(vector: _requestedMovement, planeNormal: motor.CharacterUp) * _requestedMovement.magnitude;
-                var currentPlanarVelocity = Vector3.ProjectOnPlane(vector: currentVelocity, planeNormal: motor.CharacterUp);
+                _state.Grounded = true;
+                _timeSinceUngrounded = 0f;
+                _ungroundedDueToJump = false;
 
-                var movementForce = planarMovement * Stats.AirAcceleration * deltaTime;
-                var targetPlanarVelocity = currentPlanarVelocity + movementForce;
+                var groundedMovement = motor.GetDirectionTangentToSurface(
+                    direction: _requestedMovement,
+                    surfaceNormal: motor.GroundingStatus.GroundNormal
+                ) * _requestedMovement.magnitude;
 
-                targetPlanarVelocity *= IsSprinting ? Stats.SprintMultiplier : 1f;
-                targetPlanarVelocity = Vector3.ClampMagnitude(targetPlanarVelocity, Stats.AirSpeed);
+                var targetVelocity = groundedMovement * (IsSprinting ? Stats.SprintSpeed : Stats.BaseSpeed);
 
-                currentVelocity += targetPlanarVelocity - currentPlanarVelocity;
+                float responseSpeed = _requestedMovement.sqrMagnitude > 0f ? Stats.GroundAcceleration : Stats.GroundFriction;
+
+                var moveVelocity = Vector3.Lerp(
+                    a: currentVelocity,
+                    b: targetVelocity,
+                    t: 1f - Mathf.Exp(-responseSpeed * deltaTime)
+                );
+
+                _state.Acceleration = (moveVelocity - currentVelocity) / deltaTime;
+                currentVelocity = moveVelocity;
             }
+            // gundam aerial
+            else
+            {
+                _timeSinceUngrounded += deltaTime;
 
-            var effectGravity = Stats.Gravity;
-            if (_requestedSustainedJump && Vector3.Dot(currentVelocity, motor.CharacterUp) > 0f)
-                effectGravity *= Stats.JumpSustainGravity;
+                if (_requestedMovement.sqrMagnitude > 0f)
+                {
+                    var planarMovement = Vector3.ProjectOnPlane(vector: _requestedMovement, planeNormal: motor.CharacterUp) * _requestedMovement.magnitude;
+                    var currentPlanarVelocity = Vector3.ProjectOnPlane(vector: currentVelocity, planeNormal: motor.CharacterUp);
 
-            currentVelocity += motor.CharacterUp * effectGravity * deltaTime;
+                    var movementForce = planarMovement * Stats.AirAcceleration * deltaTime;
+                    var targetPlanarVelocity = currentPlanarVelocity + movementForce;
+
+                    targetPlanarVelocity = Vector3.ClampMagnitude(targetPlanarVelocity, IsSprinting ? Stats.SprintSpeed : Stats.AirSpeed);
+                    currentVelocity += targetPlanarVelocity - currentPlanarVelocity;
+                }
+
+                // Gravity logic
+                var effectGravity = Stats.Gravity;
+                if (_requestedSustainedJump && Vector3.Dot(currentVelocity, motor.CharacterUp) > 0f)
+                    effectGravity *= Stats.JumpSustainGravity;
+
+                currentVelocity += motor.CharacterUp * effectGravity * deltaTime;
+            }
         }
 
-        // Jumping
+        // jump
         if (_requestedJump)
         {
-            var canCoyoteJump = _timeSinceUngrounded < Stats.CoyoteTime && !_ungroundedDueToJump && CurrentBoost >= Stats.JumpBoostLoss;
+            var canCoyoteJump = _timeSinceUngrounded < Stats.CoyoteTime && !_ungroundedDueToJump;
 
-            if (motor.GroundingStatus.IsStableOnGround || canCoyoteJump)
+            if ((motor.GroundingStatus.IsStableOnGround || canCoyoteJump) && CurrentBoost >= Stats.JumpBoostLoss)
             {
                 CurrentBoost -= Stats.JumpBoostLoss;
                 _requestedJump = false;
                 motor.ForceUnground(time: 0f);
                 _ungroundedDueToJump = true;
                 _state.Grounded = false;
+
+                _dashTimer = 0f;
 
                 var currentVerticalSpeed = Vector3.Dot(currentVelocity, motor.CharacterUp);
                 var targetVerticalSpeed = Mathf.Max(currentVerticalSpeed, Stats.JumpSpeed);
@@ -231,24 +264,23 @@ public class PlayerMovement : MonoBehaviour, ICharacterController
             }
         }
 
-        // Dashing
+        // dash
         if (_requestedDash)
         {
-            var canDash = (_currentDashCooldown == 0f) && (CurrentDashes > 0) && CurrentBoost >= Stats.DashBoostLoss;
+            var canDash = (_currentDashCooldown <= 0f) && (CurrentDashes > 0) && CurrentBoost >= Stats.DashBoostLoss;
             if (canDash)
             {
                 _currentDashCooldown = Stats.DashCooldown;
                 CurrentDashes--;
                 CurrentBoost -= Stats.DashBoostLoss;
                 _requestedDash = false;
-                IsDashing = true;
 
-                var dashDirection = _requestedMovement.sqrMagnitude == 0f ?
+                _dashTimer = Stats.DashDuration;
+
+                // Dash in input direction. If no input, dash in the direction the torso is facing
+                _dashDirection = _requestedMovement.sqrMagnitude == 0f ?
                     Vector3.ProjectOnPlane(root.forward, motor.CharacterUp).normalized :
                     _requestedMovement.normalized;
-
-                var dashVelocity = dashDirection * Stats.DashSpeed;
-                currentVelocity = new Vector3(dashVelocity.x, currentVelocity.y, dashVelocity.z);
             }
             else
             {
@@ -259,13 +291,16 @@ public class PlayerMovement : MonoBehaviour, ICharacterController
 
     public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
     {
+        // Torso aims towards mouse (requested rotation)
         var forward = Vector3.ProjectOnPlane(_requestedRotation * Vector3.forward, motor.CharacterUp);
         if (forward != Vector3.zero)
             currentRotation = Quaternion.LookRotation(forward, motor.CharacterUp);
 
-        if (_requestedMovement.sqrMagnitude > 0.01f)
+        // Legs aim towards actual momentum/velocity to emphasize drifting and sliding
+        Vector3 flatVelocity = new Vector3(motor.BaseVelocity.x, 0f, motor.BaseVelocity.z);
+        if (flatVelocity.sqrMagnitude > 1f) // Only rotate legs if we are actually moving fast enough
         {
-            Quaternion targetLegRotation = Quaternion.LookRotation(_requestedMovement, motor.CharacterUp);
+            Quaternion targetLegRotation = Quaternion.LookRotation(flatVelocity.normalized, motor.CharacterUp);
             playerLegs.rotation = Quaternion.Lerp(playerLegs.rotation, targetLegRotation, legRotationSpeed * deltaTime);
         }
     }
