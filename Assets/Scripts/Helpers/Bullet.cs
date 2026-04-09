@@ -15,11 +15,13 @@ public class Bullet : MonoBehaviour
 
         Material mat = target.GetComponentInChildren<Renderer>().material;
 
-        GameObject particleObject = Instantiate(p, this.transform.position, Quaternion.identity);
+        if (p)
+        {
+            GameObject particleObject = Instantiate(p, this.transform.position, Quaternion.identity);
 
-        particleObject.GetComponent<ParticleSystemRenderer>().material = mat;
-        particleObject.GetComponent<ParticleSystemRenderer>().trailMaterial = mat;
-
+            particleObject.GetComponent<ParticleSystemRenderer>().material = mat;
+            particleObject.GetComponent<ParticleSystemRenderer>().trailMaterial = mat;
+        }
 
         Destroy(this.gameObject);
     }

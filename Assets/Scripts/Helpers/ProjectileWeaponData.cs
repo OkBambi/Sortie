@@ -7,6 +7,7 @@ public class ProjectileWeaponData : WeaponData
     [Header("Projectile Stats")]
     public float BulletForce = 60f;
     public GameObject BulletPrefab;
+    public float BulletLifetime;
 
     [Header("Projectile Visuals")]
     public GameObject MuzzleFlashPrefab;
@@ -41,6 +42,6 @@ public class ProjectileWeaponData : WeaponData
             bLogic.source = ctx.PlayerRoot;
         }
 
-        Destroy(bullet, 5f);
+        Destroy(bullet, BulletLifetime);
     }
 }

@@ -21,6 +21,7 @@ MonoBehaviour:
   FireSound: 
   BulletForce: 60
   BulletPrefab: {fileID: 7141802491186774219, guid: 5a8a517a1256ee1429770c6b114ec3e3, type: 3}
+  BulletLifetime: 1
   MuzzleFlashPrefab: {fileID: 100008, guid: 0d93bfd11e7a3684f9df301526a69c0d, type: 3}
   MuzzleSpit: {fileID: 0}
   BulletTrailMaterial: {fileID: 2100000, guid: 906426e8e857d9d438b466a6f6bdd384, type: 2}
