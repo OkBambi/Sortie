@@ -23,6 +23,12 @@ public class Bullet : MonoBehaviour
             particleObject.GetComponent<ParticleSystemRenderer>().trailMaterial = mat;
         }
 
+        if (target.GetComponent<IDamage>() != null)
+        {
+            IDamage idamage = target.GetComponent<IDamage>();
+            idamage.TakeDamage(baseDmg);
+        }
+
         Destroy(this.gameObject);
     }
 }
