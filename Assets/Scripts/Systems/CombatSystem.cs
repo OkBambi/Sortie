@@ -2,13 +2,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public struct CombatInput
 {
     public bool Shoot;
     public bool Reload;
     public int NumberKeyMap;
-    public Ray AimRay; // Passed from Player
+    public Ray AimRay;
 }
 
 // Data passed to the weapon so it knows where to spawn things and can run Coroutines
@@ -57,6 +58,13 @@ public class CombatSystem : MonoBehaviour
     [Header("Visuals")]
     [Tooltip("Assign a UI/Sprite object in the scene to act as the lock-on reticle")]
     [SerializeField] private GameObject lockOnIndicator;
+    [Tooltip("How fast the indicator lerps to the target or cursor")]
+    [SerializeField] private float indicatorLerpSpeed = 25f;
+
+    [Header("Lock-On Line")]
+    [SerializeField] private LineRenderer lockOnLine;
+    [Tooltip("How much space (in world units) to leave empty at the ends of the line")]
+    [SerializeField] private float lineGapDistance = 1.5f;
 
     [Header("Shooting Points")]
     [SerializeField] private Transform shootingPoint;
@@ -74,10 +82,16 @@ public class CombatSystem : MonoBehaviour
     private float currentHoverTime = 0f;
     private ITarget lockedTarget;
     private Vector3 currentTargetPoint;
+    private Image indicatorImage;
 
     void Start()
     {
         audioManager = FindAnyObjectByType<AudioManager>();
+
+        if (lockOnIndicator != null)
+        {
+            indicatorImage = lockOnIndicator.transform.GetChild(0).Find("Indicator").GetComponent<Image>();
+        }
 
         foreach (var weaponData in initialLoadout)
         {
@@ -97,7 +111,6 @@ public class CombatSystem : MonoBehaviour
     {
         if (characterRoot == null || torso == null) return;
 
-        // 1. Hover & Lock-On Logic
         if (Physics.SphereCast(input.AimRay, hoverRadius, out RaycastHit hit, Mathf.Infinity, targetLayer))
         {
             ITarget hitTarget = hit.collider.GetComponentInParent<ITarget>();
@@ -126,7 +139,6 @@ public class CombatSystem : MonoBehaviour
             currentHoverTime = 0f;
         }
 
-        // 2. Break Lock-On Logic
         if (lockedTarget != null)
         {
             float dist = Vector3.Distance(characterRoot.position, lockedTarget.Transform.position);
@@ -138,41 +150,33 @@ public class CombatSystem : MonoBehaviour
             }
         }
 
-        // --- Visual Indicator Update ---
-        if (lockOnIndicator != null)
+        Vector3 rawMousePos;
+        if (Physics.Raycast(input.AimRay, out RaycastHit envHit, Mathf.Infinity))
         {
-            if (lockedTarget != null)
+            rawMousePos = envHit.point;
+        }
+        else
+        {
+            Plane groundPlane = new Plane(Vector3.up, characterRoot.position);
+            if (groundPlane.Raycast(input.AimRay, out float hitDistance))
             {
-                if (!lockOnIndicator.activeSelf) lockOnIndicator.SetActive(true);
-
-                // Move indicator to target. We add a little bit of Y offset so it hovers near their center/head
-                lockOnIndicator.transform.position = lockedTarget.Transform.position + (Vector3.up * 1.5f);
-
-                // Make the indicator face the camera
-                if (Camera.main != null)
-                {
-                    Vector3 lookDir = lockOnIndicator.transform.position - Camera.main.transform.position;
-                    lockOnIndicator.transform.rotation = Quaternion.LookRotation(lookDir);
-                }
+                rawMousePos = input.AimRay.GetPoint(hitDistance);
             }
             else
             {
-                if (lockOnIndicator.activeSelf) lockOnIndicator.SetActive(false);
+                rawMousePos = input.AimRay.GetPoint(50f);
             }
         }
-        // -------------------------------
 
-        // 3. Determine Final Aim Point
+
         if (lockedTarget != null)
         {
-            float projSpeed = 100f; // Default fallback speed
+            float projSpeed = 100f;
 
-            // Try to extract actual bullet speed if using ProjectileWeaponData
             if (GetActiveWeapon()?.Data is ProjectileWeaponData projData)
                 projSpeed = projData.BulletForce;
 
-            // Offset the aim point so we shoot at center mass (chest), not their feet!
-            Vector3 targetCenterMass = lockedTarget.Transform.position + (Vector3.up * 1.0f);
+            Vector3 targetCenterMass = lockedTarget.Transform.position + (Vector3.up * 0.8f);
 
             currentTargetPoint = CalculateInterceptCourse(
                 shootingPoint.position,
@@ -183,27 +187,68 @@ public class CombatSystem : MonoBehaviour
         }
         else
         {
-            // Free Aim: Raycast against the environment so we can aim up at walls or down off ledges
-            if (Physics.Raycast(input.AimRay, out RaycastHit envHit, Mathf.Infinity))
+            currentTargetPoint = rawMousePos;
+        }
+
+        if (lockOnIndicator != null)
+        {
+            Vector3 targetIndicatorPos;
+
+            if (lockedTarget != null)
             {
-                currentTargetPoint = envHit.point;
+                if (indicatorImage != null) indicatorImage.color = Color.red;
+                targetIndicatorPos = lockedTarget.Transform.position;
             }
             else
             {
-                // Ground plane aiming fallback (if aiming off into the sky)
-                Plane groundPlane = new Plane(Vector3.up, characterRoot.position);
-                if (groundPlane.Raycast(input.AimRay, out float hitDistance))
-                {
-                    currentTargetPoint = input.AimRay.GetPoint(hitDistance);
-                }
-                else
-                {
-                    currentTargetPoint = input.AimRay.GetPoint(50f);
-                }
+                if (indicatorImage != null) indicatorImage.color = Color.white;
+                targetIndicatorPos = currentTargetPoint;
+            }
+
+            lockOnIndicator.transform.position = Vector3.Lerp(
+                lockOnIndicator.transform.position,
+                targetIndicatorPos,
+                Time.deltaTime * indicatorLerpSpeed
+            );
+
+            if (Camera.main != null)
+            {
+                Vector3 lookDir = lockOnIndicator.transform.position - Camera.main.transform.position;
+                lockOnIndicator.transform.rotation = Quaternion.LookRotation(lookDir);
             }
         }
 
-        // 4. Rotate Torso
+        if (lockOnLine != null)
+        {
+            if (lockedTarget != null)
+            {
+                Vector3 lineStart = rawMousePos + (Vector3.up * 0.1f);
+                Vector3 lineEnd = lockOnIndicator.transform.position;
+
+                Vector3 dir = lineEnd - lineStart;
+                float dist = dir.magnitude;
+
+                if (dist > lineGapDistance * 2f)
+                {
+                    if (!lockOnLine.enabled) lockOnLine.enabled = true;
+
+                    Vector3 startPos = lineStart + (dir.normalized * lineGapDistance);
+                    Vector3 endPos = lineEnd - (dir.normalized * lineGapDistance);
+
+                    lockOnLine.SetPosition(0, startPos);
+                    lockOnLine.SetPosition(1, endPos);
+                }
+                else
+                {
+                    if (lockOnLine.enabled) lockOnLine.enabled = false;
+                }
+            }
+            else
+            {
+                if (lockOnLine.enabled) lockOnLine.enabled = false;
+            }
+        }
+
         Vector3 direction = (currentTargetPoint - torso.position).normalized;
         direction.y = 0f;
 
@@ -242,7 +287,6 @@ public class CombatSystem : MonoBehaviour
 
         HandleAimingAndLockOn(input);
 
-        // Weapon Switching
         if (input.NumberKeyMap >= 0 && input.NumberKeyMap < loadoutSlots.Count && input.NumberKeyMap != activeSlotIndex)
         {
             if (!GetActiveWeapon().IsReloading)
@@ -251,14 +295,12 @@ public class CombatSystem : MonoBehaviour
 
         WeaponSlot activeWeapon = GetActiveWeapon();
 
-        // Reload Logic
         if ((input.Reload || (input.Shoot && activeWeapon.CurrentAmmo <= 0)) && !activeWeapon.IsReloading && activeWeapon.CurrentAmmo < activeWeapon.Data.MaxAmmo)
         {
             StartCoroutine(ReloadRoutine(activeWeapon));
             return;
         }
 
-        // Firing Logic
         if (input.Shoot && !activeWeapon.IsReloading && activeWeapon.CurrentAmmo > 0)
         {
             if (Time.time - activeWeapon.LastFireTime >= activeWeapon.Data.FireRate)
