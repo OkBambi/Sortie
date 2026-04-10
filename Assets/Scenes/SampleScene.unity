@@ -248,6 +248,7 @@ MonoBehaviour:
   strafeSpeed: 2
   dummyRenderer: {fileID: 0}
   colorPropertyName: _BaseColor
+  whiteFlashDuration: 0.02
   hitColor: {r: 1, g: 0.5, b: 0, a: 1}
   feedbackDuration: 0.5
   wobbleIntensity: 20
@@ -793,6 +794,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f574242f1aa2dda419cb750a05741fc9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  lookAheadAmount: 0.15
+  maxLookAheadDistance: 5
+  smoothSpeed: 10
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1159,6 +1163,7 @@ MonoBehaviour:
   strafeSpeed: 2
   dummyRenderer: {fileID: 0}
   colorPropertyName: _BaseColor
+  whiteFlashDuration: 0.02
   hitColor: {r: 1, g: 0.5, b: 0, a: 1}
   feedbackDuration: 0.5
   wobbleIntensity: 20
@@ -1400,6 +1405,7 @@ MonoBehaviour:
   strafeSpeed: 2
   dummyRenderer: {fileID: 0}
   colorPropertyName: _BaseColor
+  whiteFlashDuration: 0.02
   hitColor: {r: 1, g: 0.5, b: 0, a: 1}
   feedbackDuration: 0.5
   wobbleIntensity: 20
@@ -1646,9 +1652,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   halfLife: 0.075
-  frequency: 2
+  frequency: 4
   angularDisplacement: 0.1
-  linearDisplacement: 0.01
+  linearDisplacement: 0.3
 --- !u!1 &1343619323
 GameObject:
   m_ObjectHideFlags: 0
@@ -1886,6 +1892,7 @@ MonoBehaviour:
   strafeSpeed: 2
   dummyRenderer: {fileID: 0}
   colorPropertyName: _BaseColor
+  whiteFlashDuration: 0.02
   hitColor: {r: 1, g: 0.5, b: 0, a: 1}
   feedbackDuration: 0.5
   wobbleIntensity: 20
@@ -2100,6 +2107,7 @@ MonoBehaviour:
   strafeSpeed: 2
   dummyRenderer: {fileID: 0}
   colorPropertyName: _BaseColor
+  whiteFlashDuration: 0.02
   hitColor: {r: 1, g: 0.5, b: 0, a: 1}
   feedbackDuration: 0.5
   wobbleIntensity: 20
@@ -2236,7 +2244,7 @@ MonoBehaviour:
   flipTorsoRotation: 0
   rotationSpeed: 10
   hoverRadius: 2
-  lockOnTimeRequired: 0.5
+  lockOnTimeRequired: 0.3
   lockOnMaxDistance: 50
   targetLayer:
     serializedVersion: 2

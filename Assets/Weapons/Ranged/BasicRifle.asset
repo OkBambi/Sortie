@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BasicRifle
   m_EditorClassIdentifier: 
   WeaponName: RX-7 Rifle
-  MaxAmmo: 25
+  MaxAmmo: 60
   BaseDamage: 0
   Range: 100
   FireRate: 0.04

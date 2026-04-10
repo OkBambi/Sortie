@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, ITarget, IDamage
 {
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private PlayerCamera playerCamera;
@@ -11,7 +11,14 @@ public class Player : MonoBehaviour
     [Space]
 
     private PlayerActionInputs _inputActions;
-    private Camera _mainCamera; // Cached reference for aiming
+    private Camera _mainCamera;
+    private Ray _currentAimRay;
+
+    public Transform Transform => playerMovement.transform;
+
+    public Vector3 Velocity => throw new System.NotImplementedException();
+
+    public bool IsValid => throw new System.NotImplementedException();
 
     void Start()
     {
@@ -36,11 +43,9 @@ public class Player : MonoBehaviour
         var input = _inputActions.Player;
         var deltaTime = Time.deltaTime;
 
-        // Camera Update
         var cameraInput = new CameraInput { Look = input.Look.ReadValue<Vector2>() };
         playerCamera.UpdateRotation(cameraInput);
 
-        // Movement Update
         var characterInput = new CharacterInput
         {
             Rotation = playerCamera.transform.rotation,
@@ -62,6 +67,8 @@ public class Player : MonoBehaviour
             ? _mainCamera.ScreenPointToRay(UnityEngine.Input.mousePosition)
             : new Ray(transform.position, transform.forward);
 
+        _currentAimRay = screenRay;
+
         var combatInput = new CombatInput
         {
             Shoot = input.Attack.IsPressed(),
@@ -79,8 +86,13 @@ public class Player : MonoBehaviour
         var cameraTarget = playerMovement.GetCameraTarget();
         var state = playerMovement.GetState();
 
-        playerCamera.UpdatePosition(cameraTarget);
+        playerCamera.UpdatePosition(cameraTarget, _currentAimRay, deltaTime);
         cameraSpring.UpdateSpring(deltaTime, cameraTarget.up);
         cameraLean.UpdateLean(deltaTime, state.Acceleration, cameraTarget.up);
+    }
+
+    public void TakeDamage(float damage)
+    {
+        //egh
     }
 }
