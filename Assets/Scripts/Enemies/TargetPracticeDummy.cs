@@ -64,7 +64,7 @@ public class TargetPracticeDummy : BaseEnemy
     {
         currentHealth -= Mathf.RoundToInt(damage);
 
-        Debug.Log($"Dummy took {damage} damage! Remaining Health: {currentHealth}");
+        Debug.Log($"{name} took {damage} damage");
 
         if (feedbackCoroutine != null) StopCoroutine(feedbackCoroutine);
 

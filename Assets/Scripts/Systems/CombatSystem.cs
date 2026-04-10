@@ -287,12 +287,12 @@ public class CombatSystem : MonoBehaviour
         float b = 2f * Vector3.Dot(targetVel, dirToTarget);
         float c = Vector3.Dot(dirToTarget, dirToTarget);
 
-        float determinant = (b * b) - (4f * a * c);
+        float discriminant = (b * b) - (4f * a * c);
 
-        if (determinant > 0f)
+        if (discriminant > 0f)
         {
-            float t1 = (-b + Mathf.Sqrt(determinant)) / (2f * a);
-            float t2 = (-b - Mathf.Sqrt(determinant)) / (2f * a);
+            float t1 = (-b + Mathf.Sqrt(discriminant)) / (2f * a);
+            float t2 = (-b - Mathf.Sqrt(discriminant)) / (2f * a);
             float t = (t1 > 0f && t2 > 0f) ? Mathf.Min(t1, t2) : Mathf.Max(t1, t2);
 
             if (t > 0f) return targetPos + (targetVel * t);
