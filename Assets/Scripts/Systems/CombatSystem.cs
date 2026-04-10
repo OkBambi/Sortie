@@ -111,26 +111,46 @@ public class CombatSystem : MonoBehaviour
     {
         if (characterRoot == null || torso == null) return;
 
-        if (Physics.SphereCast(input.AimRay, hoverRadius, out RaycastHit hit, Mathf.Infinity, targetLayer))
+        // 1. Hover & Lock-On Logic using SphereCastAll
+        RaycastHit[] hits = Physics.SphereCastAll(input.AimRay, hoverRadius, Mathf.Infinity, targetLayer);
+
+        ITarget bestTarget = null;
+        float closestDistToRay = float.MaxValue;
+
+        foreach (var hit in hits)
         {
             ITarget hitTarget = hit.collider.GetComponentInParent<ITarget>();
 
             if (hitTarget != null && hitTarget.IsValid)
             {
-                if (hitTarget == hoveringTarget)
+                // Calculate how close the target's center is to the exact center of our mouse ray
+                // This ensures we pick what the mouse is actively pointing at, ignoring camera depth!
+                float distToRay = Vector3.Cross(input.AimRay.direction, hitTarget.Transform.position - input.AimRay.origin).magnitude;
+
+                if (distToRay < closestDistToRay)
                 {
-                    currentHoverTime += Time.deltaTime;
-                    if (currentHoverTime >= lockOnTimeRequired && lockedTarget != hitTarget)
-                    {
-                        lockedTarget = hitTarget; // LOCK ON
-                        Debug.Log($"<color=green>[CombatSystem] Locked onto: {lockedTarget.Transform.name}</color>");
-                    }
+                    closestDistToRay = distToRay;
+                    bestTarget = hitTarget;
                 }
-                else
+            }
+        }
+
+        // Apply hover logic to the single best target we found
+        if (bestTarget != null)
+        {
+            if (bestTarget == hoveringTarget)
+            {
+                currentHoverTime += Time.deltaTime;
+                if (currentHoverTime >= lockOnTimeRequired && lockedTarget != bestTarget)
                 {
-                    hoveringTarget = hitTarget;
-                    currentHoverTime = 0f;
+                    lockedTarget = bestTarget; // LOCK ON
+                    Debug.Log($"<color=green>[CombatSystem] Locked onto: {lockedTarget.Transform.name}</color>");
                 }
+            }
+            else
+            {
+                hoveringTarget = bestTarget;
+                currentHoverTime = 0f;
             }
         }
         else
@@ -196,7 +216,7 @@ public class CombatSystem : MonoBehaviour
 
             if (lockedTarget != null)
             {
-                if (indicatorImage != null) indicatorImage.color = Color.red;
+                if (indicatorImage != null) indicatorImage.color = Color.yellow;
                 targetIndicatorPos = lockedTarget.Transform.position;
             }
             else

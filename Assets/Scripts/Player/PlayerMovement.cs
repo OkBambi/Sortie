@@ -54,7 +54,7 @@ public struct CharacterInput
     public bool Sprint;
 }
 
-public class PlayerMovement : MonoBehaviour, ICharacterController
+public class PlayerMovement : MonoBehaviour, ICharacterController, IResourceProvider
 {
     [Header("Core")]
     [SerializeField] private KinematicCharacterMotor motor;
@@ -317,4 +317,10 @@ public class PlayerMovement : MonoBehaviour, ICharacterController
 
     public Transform GetCameraTarget() => cameraTarget;
     public CharacterState GetState() => _state;
+
+    public float GetResourcePercentage(ResourceType type)
+    {
+        if (type == ResourceType.Boost) return CurrentBoost / Stats.MaxBoost;
+        else return 0.0f;
+    }
 }
