@@ -1,16 +1,7 @@
-using UnityEngine;
-
-public class IHealth : MonoBehaviour
+public interface IHealth
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    float CurrentHealth { get; }
+    float MaxHealth { get; }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    void ChangeHealth(float amount);
 }

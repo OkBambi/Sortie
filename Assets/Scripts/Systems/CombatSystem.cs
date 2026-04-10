@@ -40,7 +40,7 @@ public class WeaponSlot
     }
 }
 
-public class CombatSystem : MonoBehaviour
+public class CombatSystem : MonoBehaviour, IResourceProvider
 {
     [Header("Aiming")]
     [Tooltip("The base of the character (used for calculating source of damage)")]
@@ -355,5 +355,18 @@ public class CombatSystem : MonoBehaviour
         yield return new WaitForSeconds(weapon.Data.ReloadTime);
         weapon.CurrentAmmo = weapon.Data.MaxAmmo;
         weapon.IsReloading = false;
+    }
+
+    public float GetResourcePercentage(ResourceType type)
+    {
+        if (type == ResourceType.Ammo)
+        {
+            WeaponSlot activeWeapon = GetActiveWeapon();
+            if (activeWeapon != null && activeWeapon.Data != null && activeWeapon.Data.MaxAmmo > 0)
+            {
+                return (float)activeWeapon.CurrentAmmo / activeWeapon.Data.MaxAmmo;
+            }
+        }
+        return 0f;
     }
 }

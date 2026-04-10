@@ -26,7 +26,6 @@ public static class ItemLibrary
                             if (eventData is DamageEventData damageData)
                             {
                                 damageData.DamageAmount *= 1.50f;
-                                Debug.Log($"[AP Sabots] Damage amplified to {damageData.DamageAmount}!");
                             }
                         }
                     }
@@ -45,7 +44,6 @@ public static class ItemLibrary
                     { EventHooks.OnKill, (eventData) =>
                         {
                             // if (eventData.Owner is Player player) player.Heal(10);
-                            Debug.Log("[Scrap Harvester] Harvested scrap! +10 HP.");
                         }
                     }
                 }

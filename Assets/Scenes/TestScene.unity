@@ -1724,6 +1724,58 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.26
+      objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.26
+      objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.26
+      objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.89753646
+      objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.29193607
+      objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.06380405
+      objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.3242386
+      objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 28.86
+      objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 20.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 911138328261643078, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1126275704977660038, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 1556067384753796996, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: offsetAngle
+      value: 45
+      objectReference: {fileID: 0}
     - target: {fileID: 2365209500720248271, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
       propertyPath: m_Camera
       value: 
@@ -1731,6 +1783,62 @@ PrefabInstance:
     - target: {fileID: 2403564448284567489, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
       propertyPath: smoothSpeed
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: baseGapAngle
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: maxFillLimit
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: ejectDistance
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: ejectDuration
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: ghostGapAngle
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: anglePerSegment
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: segmentsPerLevel
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: startAngleOffset
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: 'levelScales.Array.data[1]'
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: 'levelScales.Array.data[2]'
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: 'levelScales.Array.data[3]'
+      value: 1.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: 'levelScales.Array.data[4]'
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006336200230183066, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: 'levelScales.Array.data[5]'
+      value: 2.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 5200397564101719710, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: m_FillAmount
+      value: 0.3
       objectReference: {fileID: 0}
     - target: {fileID: 5644867287193329578, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
       propertyPath: cameraLean
@@ -1788,6 +1896,10 @@ PrefabInstance:
       propertyPath: lockOnIndicator
       value: 
       objectReference: {fileID: 568956086}
+    - target: {fileID: 8618635745452603639, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
+      propertyPath: maxFillLimit
+      value: 0.3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

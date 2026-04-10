@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: BasicRifle
   m_EditorClassIdentifier: 
   WeaponName: RX-7 Rifle
-  MaxAmmo: 60
+  MaxAmmo: 12
   BaseDamage: 0
   Range: 100
   FireRate: 0.04
-  ReloadTime: 1.5
+  ReloadTime: 0.6
   FireSound: 
   BulletForce: 60
   BulletLifetime: 1
