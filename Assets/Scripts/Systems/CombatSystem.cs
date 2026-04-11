@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 using UnityEngine.UI;
 
 public struct CombatInput
@@ -352,21 +353,51 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
     private IEnumerator ReloadRoutine(WeaponSlot weapon)
     {
         weapon.IsReloading = true;
-        yield return new WaitForSeconds(weapon.Data.ReloadTime);
-        weapon.CurrentAmmo = weapon.Data.MaxAmmo;
+
+        int missingAmmo = weapon.Data.MaxAmmo - weapon.CurrentAmmo;
+        if (missingAmmo > 0)
+        {
+            // Divide the total reload time evenly across the missing bullets
+            float timePerBullet = weapon.Data.ReloadTime / missingAmmo;
+
+            for (int i = 0; i < missingAmmo; i++)
+            {
+                yield return new WaitForSeconds(timePerBullet);
+                weapon.CurrentAmmo++;
+            }
+        }
+
         weapon.IsReloading = false;
     }
 
     public float GetResourcePercentage(ResourceType type)
+    {
+        throw new NotImplementedException();
+    }
+
+    public int GetResourceCurrent(ResourceType type)
     {
         if (type == ResourceType.Ammo)
         {
             WeaponSlot activeWeapon = GetActiveWeapon();
             if (activeWeapon != null && activeWeapon.Data != null && activeWeapon.Data.MaxAmmo > 0)
             {
-                return (float)activeWeapon.CurrentAmmo / activeWeapon.Data.MaxAmmo;
+                return activeWeapon.CurrentAmmo;
             }
         }
-        return 0f;
+        return 0;
+    }
+
+    public int GetResourceMax(ResourceType type)
+    {
+        if (type == ResourceType.Ammo)
+        {
+            WeaponSlot activeWeapon = GetActiveWeapon();
+            if (activeWeapon != null && activeWeapon.Data != null && activeWeapon.Data.MaxAmmo > 0)
+            {
+                return activeWeapon.Data.MaxAmmo;
+            }
+        }
+        return 0;
     }
 }

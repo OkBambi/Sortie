@@ -323,4 +323,14 @@ public class PlayerMovement : MonoBehaviour, ICharacterController, IResourceProv
         if (type == ResourceType.Boost) return CurrentBoost / Stats.MaxBoost;
         else return 0.0f;
     }
+
+    int IResourceProvider.GetResourceCurrent(ResourceType type)
+    {
+        throw new NotImplementedException();
+    }
+
+    int IResourceProvider.GetResourceMax(ResourceType type)
+    {
+        throw new NotImplementedException();
+    }
 }

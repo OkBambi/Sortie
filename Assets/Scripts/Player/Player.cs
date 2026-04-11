@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Player : MonoBehaviour, ITarget, IDamage
+public class Player : MonoBehaviour, ITarget, IDamage, IHealth
 {
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private PlayerCamera playerCamera;
@@ -19,6 +19,10 @@ public class Player : MonoBehaviour, ITarget, IDamage
     public Vector3 Velocity => throw new System.NotImplementedException();
 
     public bool IsValid => throw new System.NotImplementedException();
+
+    public float CurrentHealth => throw new System.NotImplementedException();
+
+    public float MaxHealth => throw new System.NotImplementedException();
 
     void Start()
     {
@@ -94,5 +98,10 @@ public class Player : MonoBehaviour, ITarget, IDamage
     public void TakeDamage(float damage)
     {
         //egh
+    }
+
+    public void ChangeHealth(float amount)
+    {
+        throw new System.NotImplementedException();
     }
 }

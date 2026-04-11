@@ -62,7 +62,7 @@ public class TargetPracticeDummy : BaseEnemy
 
     public override void TakeDamage(float damage)
     {
-        currentHealth -= Mathf.RoundToInt(damage);
+        base.ChangeHealth(-damage); //subtract damage from currentHealth
 
         Debug.Log($"{name} took {damage} damage");
 
