@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0060582f951cc54cb29008b32279389, type: 3}
+  m_Name: ItanoCircusMissile
+  m_EditorClassIdentifier: 
+  WeaponName: Itano Circus
+  MaxAmmo: 1000
+  ReloadTime: 6.7
+  TriggerModule: {fileID: 11400000, guid: d5c6f14d05733424b986f8429f5c6197, type: 2}
+  EmitterModule: {fileID: 11400000, guid: f6baff495d8e9104e9f25052f49cf3cc, type: 2}
+  FireSound: Shot

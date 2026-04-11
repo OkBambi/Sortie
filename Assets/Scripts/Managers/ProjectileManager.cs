@@ -12,8 +12,14 @@ public class ProjectileManager : MonoBehaviour
         public float Lifetime;
         public int Damage;
         public Transform Source;
+
         public GameObject VisualPrefab;
         public GameObject HitParticlePrefab;
+
+        // Modularity additions
+        public Transform HomingTarget;
+        public float TurnSpeed;
+        public float ExplosionRadius;
     }
 
     private List<Projectile> activeProjectiles = new List<Projectile>();
@@ -24,7 +30,7 @@ public class ProjectileManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    public void SpawnProjectile(Vector3 startPos, Vector3 velocity, int damage, float lifetime, Transform source, GameObject visualPrefab, GameObject hitParticlePrefab)
+    public void SpawnProjectile(Vector3 startPos, Vector3 velocity, int damage, float lifetime, Transform source, GameObject visualPrefab, GameObject hitParticlePrefab, Transform homingTarget = null, float turnSpeed = 0f, float explosionRadius = 0f)
     {
         GameObject visual = null;
         if (visualPrefab != null)
@@ -40,7 +46,10 @@ public class ProjectileManager : MonoBehaviour
             Damage = damage,
             Source = source,
             VisualPrefab = visual,
-            HitParticlePrefab = hitParticlePrefab
+            HitParticlePrefab = hitParticlePrefab,
+            HomingTarget = homingTarget,
+            TurnSpeed = turnSpeed,
+            ExplosionRadius = explosionRadius
         });
     }
 
@@ -57,6 +66,16 @@ public class ProjectileManager : MonoBehaviour
             {
                 DestroyProjectile(i, p);
                 continue;
+            }
+
+            // Homing Logic
+            if (p.HomingTarget != null && p.HomingTarget.gameObject.activeInHierarchy)
+            {
+                Vector3 targetDir = (p.HomingTarget.position - p.Position).normalized;
+                p.Velocity = Vector3.RotateTowards(p.Velocity.normalized, targetDir, p.TurnSpeed * dt, 0f) * p.Velocity.magnitude;
+
+                if (p.VisualPrefab != null)
+                    p.VisualPrefab.transform.rotation = Quaternion.LookRotation(p.Velocity);
             }
 
             Vector3 nextPos = p.Position + (p.Velocity * dt);
@@ -81,25 +100,27 @@ public class ProjectileManager : MonoBehaviour
     {
         if (p.HitParticlePrefab != null)
         {
-            GameObject particleObject = Instantiate(p.HitParticlePrefab, hit.point, Quaternion.LookRotation(hit.normal));
+            Instantiate(p.HitParticlePrefab, hit.point, Quaternion.LookRotation(hit.normal));
+        }
 
-            Renderer targetRenderer = hit.collider.GetComponentInChildren<Renderer>();
-            if (targetRenderer != null)
+        // Explosive AoE Logic
+        if (p.ExplosionRadius > 0f)
+        {
+            Collider[] hitColliders = Physics.OverlapSphere(hit.point, p.ExplosionRadius);
+            foreach (var col in hitColliders)
             {
-                Material mat = targetRenderer.material;
-                ParticleSystemRenderer psr = particleObject.GetComponent<ParticleSystemRenderer>();
-
-                if (psr != null)
+                if (col.TryGetComponent<IDamage>(out var aoeDamageable))
                 {
-                    psr.material = mat;
-                    psr.trailMaterial = mat;
+                    aoeDamageable.TakeDamage(p.Damage);
                 }
             }
         }
-
-        if (hit.collider.TryGetComponent<IDamage>(out var damageable))
+        else // Single Target Logic
         {
-            damageable.TakeDamage(p.Damage);
+            if (hit.collider.TryGetComponent<IDamage>(out var damageable))
+            {
+                damageable.TakeDamage(p.Damage);
+            }
         }
     }
 

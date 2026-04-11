@@ -62,11 +62,6 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth
         playerMovement.UpdateInput(characterInput);
         playerMovement.UpdateBody(deltaTime);
 
-        //ill make proper inputs SOON :TM:
-        int requestedSlot = -1;
-        if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha1)) requestedSlot = 0;
-        if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha2)) requestedSlot = 1;
-
         Ray screenRay = _mainCamera != null
             ? _mainCamera.ScreenPointToRay(UnityEngine.Input.mousePosition)
             : new Ray(transform.position, transform.forward);
@@ -75,9 +70,11 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth
 
         var combatInput = new CombatInput
         {
-            Shoot = input.Attack.IsPressed(),
+            ShootPrimary = input.AttackPrimary.IsPressed(),
+            ShootSecondary = input.AttackSecondary.IsPressed(),
+            ShootLeftShoulder = input.LeftShoulder.IsPressed(),
+            ShootRightShoulder = input.RightShoulder.IsPressed(),
             Reload = input.Reload.WasPressedThisFrame(),
-            NumberKeyMap = requestedSlot,
             AimRay = screenRay
         };
 

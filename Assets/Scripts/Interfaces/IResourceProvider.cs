@@ -1,7 +1,10 @@
 public enum ResourceType
 {
     Health,
-    Ammo,
+    PrimaryAmmo,
+    SecondaryAmmo,
+    LeftAmmo,
+    RightAmmo,
     Shield,
     ReloadProgress,
     Boost

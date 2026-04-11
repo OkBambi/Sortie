@@ -7,12 +7,10 @@ public class UniversalUISegments : MonoBehaviour
 {
     [Header("Data Source")]
     [SerializeField] private GameObject owner;
-    [SerializeField] private ResourceType resourceType = ResourceType.Ammo;
+    [SerializeField] private ResourceType resourceType = ResourceType.LeftAmmo;
 
     [Header("Containers")]
-    [Tooltip("The parent holding a Grid or LayoutGroup component.")]
     [SerializeField] private Transform segmentsContainer;
-    [Tooltip("Where ejected segments fly. Usually just the canvas or the parent of the LayoutGroup so they break free of the grid.")]
     [SerializeField] private Transform ghostContainer;
 
     [Header("Prefabs")]
@@ -21,6 +19,7 @@ public class UniversalUISegments : MonoBehaviour
     [Header("Visuals")]
     [SerializeField] private Color activeColor = Color.white;
     [SerializeField] private Color spentColor = new Color(1f, 1f, 1f, 0.2f);
+    [SerializeField] private Color refillColor;
     [SerializeField] private bool hideEmptySegments = false;
 
     [Header("Ejection Animation")]
@@ -33,11 +32,18 @@ public class UniversalUISegments : MonoBehaviour
     [SerializeField] private float randomTorqueAngle = 90f;
 
     [Header("Refill Animation")]
-    [Tooltip("Makes the segment pop/snap into place when refilled.")]
     [SerializeField] private bool animateRefill = true;
     [SerializeField] private float refillDuration = 0.15f;
-    [Tooltip("How large the segment starts before snapping into place (1 = normal size)")]
     [SerializeField] private float refillStartScale = 1.5f;
+
+    [Header("Dynamic Sizing")]
+    [SerializeField] private bool dynamicCellSizing = true;
+    [Tooltip("The ammo count that your Grid Layout Group's current Cell Size is perfectly tuned for.")]
+    [SerializeField] private int referenceAmmoCount = 30;
+    [Tooltip("Max segments per row before wrapping down to a new row.")]
+    [SerializeField] private int maxSegmentsPerRow = 10;
+    [Tooltip("Maximum scale multiplier for cell sizes. Prevents low-ammo weapons from having massive segments.")]
+    [SerializeField] private float maxCellScale = 2.0f;
 
     private IResourceProvider _resourceProvider;
     private List<Image> _spawnedSegments = new List<Image>();
@@ -45,11 +51,25 @@ public class UniversalUISegments : MonoBehaviour
     private int _currentMax = -1;
     private int _lastKnownCurrent = -1;
 
+    private GridLayoutGroup _gridLayoutGroup;
+    private Vector2 _baseCellSize;
+    private Vector2 _baseSpacing;
+
     void Start()
     {
         if (ghostContainer == null && segmentsContainer != null)
         {
             ghostContainer = segmentsContainer.parent;
+        }
+
+        if (segmentsContainer != null)
+        {
+            _gridLayoutGroup = segmentsContainer.GetComponent<GridLayoutGroup>();
+            if (_gridLayoutGroup != null)
+            {
+                _baseCellSize = _gridLayoutGroup.cellSize;
+                _baseSpacing = _gridLayoutGroup.spacing;
+            }
         }
 
         SetOwner(owner);
@@ -96,7 +116,6 @@ public class UniversalUISegments : MonoBehaviour
             }
             _lastKnownCurrent = currentAmount;
         }
-
         else if (currentAmount > _lastKnownCurrent)
         {
             UpdateSegmentColors(currentAmount);
@@ -119,6 +138,47 @@ public class UniversalUISegments : MonoBehaviour
     private void RebuildSegments(int newMax)
     {
         ClearSegments();
+
+        if (dynamicCellSizing && _gridLayoutGroup != null && newMax > 0)
+        {
+            RectTransform rt = segmentsContainer.GetComponent<RectTransform>();
+
+            float availableWidth = rt.rect.width - _gridLayoutGroup.padding.left - _gridLayoutGroup.padding.right;
+            float availableHeight = rt.rect.height - _gridLayoutGroup.padding.top - _gridLayoutGroup.padding.bottom;
+
+            int columns = Mathf.Min(newMax, maxSegmentsPerRow);
+            int rows = Mathf.CeilToInt((float)newMax / columns);
+
+            // Force the grid layout to wrap exactly at our calculated column count!
+            _gridLayoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            _gridLayoutGroup.constraintCount = columns;
+
+            // Use exact container width if available, otherwise calculate the total width of your baseline configuration
+            float targetTotalWidth = availableWidth > 0
+                ? availableWidth
+                : (maxSegmentsPerRow * _baseCellSize.x) + (Mathf.Max(0, maxSegmentsPerRow - 1) * _baseSpacing.x);
+
+            // Scale factor relative to our target columns, but bounded so low ammo counts don't get huge
+            float scaleFactor = (float)maxSegmentsPerRow / columns;
+            scaleFactor = Mathf.Min(scaleFactor, maxCellScale);
+
+            float newSpacingX = _baseSpacing.x * scaleFactor;
+            float totalSpacingWidth = Mathf.Max(0, columns - 1) * newSpacingX;
+
+            // Distribute remaining width, limit it using maxCellScale
+            float rawCellWidth = Mathf.Max(0.01f, (targetTotalWidth - totalSpacingWidth) / columns);
+            float newCellWidth = Mathf.Min(rawCellWidth, _baseCellSize.x * maxCellScale);
+
+            // Use exact container height to prevent vertical overflow, and divide by rows if stacked
+            float targetHeight = availableHeight > 0 ? availableHeight : _baseCellSize.y;
+            float totalSpacingHeight = Mathf.Max(0, rows - 1) * _baseSpacing.y;
+            float rawCellHeight = Mathf.Max(0.01f, (targetHeight - totalSpacingHeight) / rows);
+
+            float newCellHeight = Mathf.Min(rawCellHeight, _baseCellSize.y * maxCellScale);
+
+            _gridLayoutGroup.cellSize = new Vector2(newCellWidth, newCellHeight);
+            _gridLayoutGroup.spacing = new Vector2(newSpacingX, _baseSpacing.y);
+        }
 
         for (int i = 0; i < newMax; i++)
         {
@@ -176,7 +236,8 @@ public class UniversalUISegments : MonoBehaviour
         ghostImg.color = activeColor;
         ghostRect.position = originalImg.rectTransform.position;
         ghostRect.rotation = originalImg.rectTransform.rotation;
-        ghostRect.sizeDelta = originalImg.rectTransform.sizeDelta;
+
+        ghostRect.sizeDelta = new Vector2(originalImg.rectTransform.rect.width, originalImg.rectTransform.rect.height);
         ghostRect.pivot = originalImg.rectTransform.pivot;
 
         float spreadZ = Random.Range(-randomSpreadAngle, randomSpreadAngle);
@@ -226,6 +287,8 @@ public class UniversalUISegments : MonoBehaviour
         Vector3 targetScale = Vector3.one;
         Vector3 startScale = Vector3.one * refillStartScale;
 
+        img.color = refillColor;
+
         float elapsed = 0f;
 
         while (elapsed < refillDuration)
@@ -245,6 +308,7 @@ public class UniversalUISegments : MonoBehaviour
         if (img != null)
         {
             rect.localScale = targetScale;
+            img.color = activeColor;
         }
     }
 }

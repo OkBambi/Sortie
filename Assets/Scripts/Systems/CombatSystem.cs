@@ -2,43 +2,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Assertions.Must;
 using UnityEngine.UI;
 
 public struct CombatInput
 {
-    public bool Shoot;
+    public bool ShootPrimary;
+    public bool ShootSecondary;
+    public bool ShootLeftShoulder;
+    public bool ShootRightShoulder;
     public bool Reload;
-    public int NumberKeyMap;
     public Ray AimRay;
-}
-
-// Data passed to the weapon so it knows where to spawn things and can run Coroutines
-public struct WeaponContext
-{
-    public MonoBehaviour Runner;
-    public Transform PlayerRoot;
-    public Transform ShootingPoint;
-    public Transform MuzzlePoint;
-    public Transform CurrentTarget;
-    public Vector3 TargetPoint;
-    public AudioManager Audio;
-}
-
-[Serializable]
-public class WeaponSlot
-{
-    public WeaponData Data;
-    public int CurrentAmmo;
-    public bool IsReloading;
-    public float LastFireTime;
-
-    public void Initialize()
-    {
-        CurrentAmmo = Data.MaxAmmo;
-        IsReloading = false;
-        LastFireTime = -Data.FireRate;
-    }
 }
 
 public class CombatSystem : MonoBehaviour, IResourceProvider
@@ -71,19 +44,25 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
     [SerializeField] private Transform shootingPoint;
     [SerializeField] private Transform muzzlePoint;
 
-    [Header("Loadout")]
-    [SerializeField] private List<WeaponData> initialLoadout;
-    private List<WeaponSlot> loadoutSlots = new List<WeaponSlot>();
-    private int activeSlotIndex = 0;
+    [Header("AC6 Loadout")]
+    [SerializeField] private WeaponData primaryWeapon;
+    [SerializeField] private WeaponData secondaryWeapon;
+    [SerializeField] private WeaponData leftShoulderWeapon;
+    [SerializeField] private WeaponData rightShoulderWeapon;
+
+    // Runtime tracking
+    private WeaponInstance[] loadoutSlots = new WeaponInstance[4];
+    private Dictionary<ResourceType, int> resourceToSlotMap = new Dictionary<ResourceType, int>();
 
     private AudioManager audioManager;
 
-    // Aiming State
     private ITarget hoveringTarget;
     private float currentHoverTime = 0f;
     private ITarget lockedTarget;
     private Vector3 currentTargetPoint;
     private Image indicatorImage;
+
+    private CombatInput previousInput;
 
     void Start()
     {
@@ -94,25 +73,40 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
             indicatorImage = lockOnIndicator.transform.GetChild(0).Find("Indicator").GetComponent<Image>();
         }
 
-        foreach (var weaponData in initialLoadout)
-        {
-            var slot = new WeaponSlot { Data = weaponData };
-            slot.Initialize();
-            loadoutSlots.Add(slot);
-        }
+        loadoutSlots = new WeaponInstance[4];
+
+        InitializeWeaponSlot(0, primaryWeapon);
+        InitializeWeaponSlot(1, secondaryWeapon);
+        InitializeWeaponSlot(2, leftShoulderWeapon);
+        InitializeWeaponSlot(3, rightShoulderWeapon);
+
+        resourceToSlotMap[ResourceType.PrimaryAmmo] = 0;
+        resourceToSlotMap[ResourceType.SecondaryAmmo] = 1;
+        resourceToSlotMap[ResourceType.LeftAmmo] = 2;
+        resourceToSlotMap[ResourceType.RightAmmo] = 3;
     }
 
-    public WeaponSlot GetActiveWeapon()
+    private void InitializeWeaponSlot(int index, WeaponData data)
     {
-        if (loadoutSlots.Count == 0) return null;
-        return loadoutSlots[activeSlotIndex];
+        if (data != null)
+        {
+            loadoutSlots[index] = new WeaponInstance();
+            WeaponContext context = new WeaponContext
+            {
+                Runner = this,
+                PlayerRoot = characterRoot,
+                ShootingPoint = shootingPoint,
+                MuzzlePoint = muzzlePoint,
+                Audio = audioManager
+            };
+            loadoutSlots[index].Initialize(data, context);
+        }
     }
 
     private void HandleAimingAndLockOn(CombatInput input)
     {
         if (characterRoot == null || torso == null) return;
 
-        // 1. Hover & Lock-On Logic using SphereCastAll
         RaycastHit[] hits = Physics.SphereCastAll(input.AimRay, hoverRadius, Mathf.Infinity, targetLayer);
 
         ITarget bestTarget = null;
@@ -124,8 +118,6 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
 
             if (hitTarget != null && hitTarget.IsValid)
             {
-                // Calculate how close the target's center is to the exact center of our mouse ray
-                // This ensures we pick what the mouse is actively pointing at, ignoring camera depth!
                 float distToRay = Vector3.Cross(input.AimRay.direction, hitTarget.Transform.position - input.AimRay.origin).magnitude;
 
                 if (distToRay < closestDistToRay)
@@ -136,7 +128,6 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
             }
         }
 
-        // Apply hover logic to the single best target we found
         if (bestTarget != null)
         {
             if (bestTarget == hoveringTarget)
@@ -189,13 +180,17 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
             }
         }
 
-
         if (lockedTarget != null)
         {
             float projSpeed = 100f;
 
-            if (GetActiveWeapon()?.Data is ProjectileWeaponData projData)
-                projSpeed = projData.BulletForce;
+            if (loadoutSlots[0] != null && loadoutSlots[0].Data != null)
+            {
+                if (loadoutSlots[0].Data.EmitterModule is ProjectileEmitter projEmitter)
+                {
+                    projSpeed = projEmitter.BulletForce;
+                }
+            }
 
             Vector3 targetCenterMass = lockedTarget.Transform.position + (Vector3.up * 0.8f);
 
@@ -304,100 +299,84 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
 
     public void ProcessCombat(CombatInput input)
     {
-        if (loadoutSlots.Count == 0) return;
-
         HandleAimingAndLockOn(input);
 
-        if (input.NumberKeyMap >= 0 && input.NumberKeyMap < loadoutSlots.Count && input.NumberKeyMap != activeSlotIndex)
+        for (int i = 0; i < 4; i++)
         {
-            if (!GetActiveWeapon().IsReloading)
-                activeSlotIndex = input.NumberKeyMap;
+            if (loadoutSlots[i] != null)
+            {
+                loadoutSlots[i].Context.CurrentTarget = lockedTarget?.Transform;
+                loadoutSlots[i].Context.TargetPoint = currentTargetPoint;
+            }
         }
 
-        WeaponSlot activeWeapon = GetActiveWeapon();
+        HandleWeapon(loadoutSlots[0], input.ShootPrimary, previousInput.ShootPrimary, input.Reload);
+        HandleWeapon(loadoutSlots[1], input.ShootSecondary, previousInput.ShootSecondary, input.Reload);
+        HandleWeapon(loadoutSlots[2], input.ShootLeftShoulder, previousInput.ShootLeftShoulder, input.Reload);
+        HandleWeapon(loadoutSlots[3], input.ShootRightShoulder, previousInput.ShootRightShoulder, input.Reload);
 
-        if ((input.Reload || (input.Shoot && activeWeapon.CurrentAmmo <= 0)) && !activeWeapon.IsReloading && activeWeapon.CurrentAmmo < activeWeapon.Data.MaxAmmo)
+        previousInput = input;
+    }
+
+    private void HandleWeapon(WeaponInstance weapon, bool isHeld, bool wasHeld, bool isReloadInput)
+    {
+        if (weapon == null || weapon.Data == null) return;
+
+        bool isDown = isHeld && !wasHeld;
+        bool isUp = !isHeld && wasHeld;
+
+        // Auto-Reload trigger
+        if ((isReloadInput || (isHeld && weapon.CurrentAmmo <= 0)) && !weapon.IsReloading && weapon.CurrentAmmo < weapon.Data.MaxAmmo)
         {
-            StartCoroutine(ReloadRoutine(activeWeapon));
+            StartCoroutine(ReloadRoutine(weapon));
             return;
         }
 
-        if (input.Shoot && !activeWeapon.IsReloading && activeWeapon.CurrentAmmo > 0)
+        if (!weapon.IsReloading)
         {
-            if (Time.time - activeWeapon.LastFireTime >= activeWeapon.Data.FireRate)
-            {
-                Fire(activeWeapon);
-                activeWeapon.LastFireTime = Time.time;
-            }
+            weapon.UpdateInput(isDown, isHeld, isUp);
         }
     }
 
-    private void Fire(WeaponSlot weapon)
-    {
-        weapon.CurrentAmmo--;
-
-        WeaponContext context = new WeaponContext
-        {
-            Runner = this,
-            PlayerRoot = characterRoot,
-            ShootingPoint = shootingPoint,
-            MuzzlePoint = muzzlePoint,
-            CurrentTarget = lockedTarget?.Transform,
-            TargetPoint = currentTargetPoint,
-            Audio = audioManager
-        };
-
-        weapon.Data.PerformAttack(context);
-    }
-
-    private IEnumerator ReloadRoutine(WeaponSlot weapon)
+    private IEnumerator ReloadRoutine(WeaponInstance weapon)
     {
         weapon.IsReloading = true;
-
         int missingAmmo = weapon.Data.MaxAmmo - weapon.CurrentAmmo;
+
         if (missingAmmo > 0)
         {
-            // Divide the total reload time evenly across the missing bullets
             float timePerBullet = weapon.Data.ReloadTime / missingAmmo;
-
             for (int i = 0; i < missingAmmo; i++)
             {
                 yield return new WaitForSeconds(timePerBullet);
                 weapon.CurrentAmmo++;
             }
         }
-
         weapon.IsReloading = false;
     }
 
     public float GetResourcePercentage(ResourceType type)
     {
-        throw new NotImplementedException();
+        if (resourceToSlotMap.TryGetValue(type, out int slotIndex))
+        {
+            var weapon = loadoutSlots[slotIndex];
+            if (weapon != null && weapon.Data != null && weapon.Data.MaxAmmo > 0)
+                return (float)weapon.CurrentAmmo / weapon.Data.MaxAmmo;
+        }
+        return 0f;
     }
 
     public int GetResourceCurrent(ResourceType type)
     {
-        if (type == ResourceType.Ammo)
-        {
-            WeaponSlot activeWeapon = GetActiveWeapon();
-            if (activeWeapon != null && activeWeapon.Data != null && activeWeapon.Data.MaxAmmo > 0)
-            {
-                return activeWeapon.CurrentAmmo;
-            }
-        }
+        if (resourceToSlotMap.TryGetValue(type, out int slotIndex))
+            return loadoutSlots[slotIndex]?.CurrentAmmo ?? 0;
         return 0;
     }
 
     public int GetResourceMax(ResourceType type)
     {
-        if (type == ResourceType.Ammo)
-        {
-            WeaponSlot activeWeapon = GetActiveWeapon();
-            if (activeWeapon != null && activeWeapon.Data != null && activeWeapon.Data.MaxAmmo > 0)
-            {
-                return activeWeapon.Data.MaxAmmo;
-            }
-        }
+        if (resourceToSlotMap.TryGetValue(type, out int slotIndex))
+            return loadoutSlots[slotIndex]?.Data.MaxAmmo ?? 0;
         return 0;
     }
 }
