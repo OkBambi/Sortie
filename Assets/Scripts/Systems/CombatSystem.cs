@@ -59,9 +59,13 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
     private ITarget hoveringTarget;
     private float currentHoverTime = 0f;
     private ITarget lockedTarget;
-    private Vector3 currentTargetPoint;
-    private Image indicatorImage;
 
+    private Vector3 currentTargetPoint;
+
+    private Vector3 currentRawAimPoint;
+    private Vector3 currentTargetCenterMass;
+
+    private Image indicatorImage;
     private CombatInput previousInput;
 
     void Start()
@@ -162,21 +166,20 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
             }
         }
 
-        Vector3 rawMousePos;
         if (Physics.Raycast(input.AimRay, out RaycastHit envHit, Mathf.Infinity))
         {
-            rawMousePos = envHit.point;
+            currentRawAimPoint = envHit.point;
         }
         else
         {
             Plane groundPlane = new Plane(Vector3.up, characterRoot.position);
             if (groundPlane.Raycast(input.AimRay, out float hitDistance))
             {
-                rawMousePos = input.AimRay.GetPoint(hitDistance);
+                currentRawAimPoint = input.AimRay.GetPoint(hitDistance);
             }
             else
             {
-                rawMousePos = input.AimRay.GetPoint(50f);
+                currentRawAimPoint = input.AimRay.GetPoint(50f);
             }
         }
 
@@ -192,18 +195,18 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
                 }
             }
 
-            Vector3 targetCenterMass = lockedTarget.Transform.position + (Vector3.up * 0.8f);
+            currentTargetCenterMass = lockedTarget.Transform.position + (Vector3.up * 0.8f);
 
             currentTargetPoint = CalculateInterceptCourse(
                 shootingPoint.position,
-                targetCenterMass,
+                currentTargetCenterMass,
                 lockedTarget.Velocity,
                 projSpeed
             );
         }
         else
         {
-            currentTargetPoint = rawMousePos;
+            currentTargetPoint = currentRawAimPoint;
         }
 
         if (lockOnIndicator != null)
@@ -238,7 +241,7 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
         {
             if (lockedTarget != null)
             {
-                Vector3 lineStart = rawMousePos + (Vector3.up * 0.1f);
+                Vector3 lineStart = currentRawAimPoint + (Vector3.up * 0.1f);
                 Vector3 lineEnd = lockOnIndicator.transform.position;
 
                 Vector3 dir = lineEnd - lineStart;
@@ -301,12 +304,33 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
     {
         HandleAimingAndLockOn(input);
 
+        //ok now we actually use each weapon individually for the prediction
         for (int i = 0; i < 4; i++)
         {
             if (loadoutSlots[i] != null)
             {
                 loadoutSlots[i].Context.CurrentTarget = lockedTarget?.Transform;
-                loadoutSlots[i].Context.TargetPoint = currentTargetPoint;
+
+                if (lockedTarget != null)
+                {
+                    float projSpeed = 100f;
+
+                    if (loadoutSlots[i].Data != null && loadoutSlots[i].Data.EmitterModule is ProjectileEmitter projEmitter)
+                    {
+                        projSpeed = projEmitter.BulletForce;
+                    }
+
+                    loadoutSlots[i].Context.TargetPoint = CalculateInterceptCourse(
+                        shootingPoint.position,
+                        currentTargetCenterMass,
+                        lockedTarget.Velocity,
+                        projSpeed
+                    );
+                }
+                else
+                {
+                    loadoutSlots[i].Context.TargetPoint = currentRawAimPoint;
+                }
             }
         }
 

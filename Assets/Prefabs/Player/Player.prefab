@@ -223,7 +223,7 @@ MonoBehaviour:
   spentColor: {r: 0.2830189, g: 0.2830189, b: 0.2830189, a: 0.2}
   refillColor: {r: 0.8679245, g: 0.52128756, b: 0.09416164, a: 1}
   hideEmptySegments: 0
-  ejectDirection: {x: 0, y: -1}
+  ejectDirection: {x: 0, y: 1}
   ejectDistance: 0.2
   ejectDuration: 0.1
   randomSpreadAngle: 0
@@ -232,7 +232,9 @@ MonoBehaviour:
   refillDuration: 0.15
   refillStartScale: 1.5
   dynamicCellSizing: 1
-  referenceAmmoCount: 45
+  referenceAmmoCount: 50
+  maxSegmentsPerRow: 10
+  maxCellScale: 2
 --- !u!1 &710144131943992869
 GameObject:
   m_ObjectHideFlags: 0
@@ -304,7 +306,7 @@ MonoBehaviour:
   rotationSpeed: 10
   hoverRadius: 2
   lockOnTimeRequired: 0.3
-  lockOnMaxDistance: 35
+  lockOnMaxDistance: 45
   targetLayer:
     serializedVersion: 2
     m_Bits: 64
@@ -314,10 +316,10 @@ MonoBehaviour:
   lineGapDistance: 0.3
   shootingPoint: {fileID: 7494968560873920993}
   muzzlePoint: {fileID: 4604479324968870080}
-  primaryWeapon: {fileID: 11400000, guid: c3b1d024f1dade544b93df7548733295, type: 2}
-  secondaryWeapon: {fileID: 11400000, guid: bd96fcfd57afc1142bcce1ac4749c823, type: 2}
-  leftShoulderWeapon: {fileID: 0}
-  rightShoulderWeapon: {fileID: 0}
+  primaryWeapon: {fileID: 11400000, guid: d4f9007d1226a3c44a0e12f0fd26cbee, type: 2}
+  secondaryWeapon: {fileID: 11400000, guid: d5195fb6bfde9fc44ab9ab4ea3ed4e78, type: 2}
+  leftShoulderWeapon: {fileID: 11400000, guid: 1757f36e76458014da61f8821034bcdd, type: 2}
+  rightShoulderWeapon: {fileID: 11400000, guid: 1757f36e76458014da61f8821034bcdd, type: 2}
 --- !u!1 &750661143890449628
 GameObject:
   m_ObjectHideFlags: 0
@@ -349,6 +351,100 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4191231072383194053}
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
+--- !u!1 &822353226372063358
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6044037698359287445}
+  - component: {fileID: 6072866223847482113}
+  - component: {fileID: 7976177281328663375}
+  m_Layer: 5
+  m_Name: AmmoSegmentsRight
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &6044037698359287445
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 822353226372063358}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 33.3, y: 33.3, z: 33.3}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 4084713901390769357}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 51.7, y: 0}
+  m_SizeDelta: {x: 0.91, y: 0.59}
+  m_Pivot: {x: 1, y: 0.5}
+--- !u!114 &6072866223847482113
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 822353226372063358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 0
+  m_StartCorner: 2
+  m_StartAxis: 0
+  m_CellSize: {x: 0.15, y: 0.25}
+  m_Spacing: {x: 0.02, y: 0.02}
+  m_Constraint: 0
+  m_ConstraintCount: 2
+--- !u!114 &7976177281328663375
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 822353226372063358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3d7f05372e23054f8677855270d9e58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  owner: {fileID: 710144131943992869}
+  resourceType: 4
+  segmentsContainer: {fileID: 6044037698359287445}
+  ghostContainer: {fileID: 8869821126790049586}
+  segmentPrefab: {fileID: 3907973244284706425, guid: fbcc8ad9ca2ba1247ac15802f47c65ba, type: 3}
+  activeColor: {r: 1, g: 1, b: 1, a: 0.7529412}
+  spentColor: {r: 0.2830189, g: 0.2830189, b: 0.2830189, a: 0.2}
+  refillColor: {r: 0.8679245, g: 0.52128756, b: 0.09416164, a: 1}
+  hideEmptySegments: 0
+  ejectDirection: {x: 0, y: 1}
+  ejectDistance: 0.2
+  ejectDuration: 0.1
+  randomSpreadAngle: 0
+  randomTorqueAngle: 0
+  animateRefill: 1
+  refillDuration: 0.15
+  refillStartScale: 1.5
+  dynamicCellSizing: 1
+  referenceAmmoCount: 10
+  maxSegmentsPerRow: 6
+  maxCellScale: 2
 --- !u!1 &938452073613948387
 GameObject:
   m_ObjectHideFlags: 0
@@ -1211,7 +1307,7 @@ RectTransform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 1
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8869821126790049586}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1265,7 +1361,7 @@ MonoBehaviour:
   spentColor: {r: 0.2830189, g: 0.2830189, b: 0.2830189, a: 0.2}
   refillColor: {r: 0.8679245, g: 0.52128756, b: 0.09416164, a: 1}
   hideEmptySegments: 0
-  ejectDirection: {x: 0, y: -1}
+  ejectDirection: {x: 0, y: 1}
   ejectDistance: 0.2
   ejectDuration: 0.1
   randomSpreadAngle: 0
@@ -1274,7 +1370,9 @@ MonoBehaviour:
   refillDuration: 0.15
   refillStartScale: 1.5
   dynamicCellSizing: 1
-  referenceAmmoCount: 45
+  referenceAmmoCount: 50
+  maxSegmentsPerRow: 10
+  maxCellScale: 2
 --- !u!1 &8287659406383813339
 GameObject:
   m_ObjectHideFlags: 0
@@ -1302,7 +1400,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8287659406383813339}
-  m_LocalRotation: {x: 0.24529698, y: 0.17066635, z: -0.04391493, w: 0.9532963}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
@@ -1310,7 +1408,7 @@ RectTransform:
   - {fileID: 3553764831757600717}
   - {fileID: 7804813460137485079}
   m_Father: {fileID: 4084713901390769357}
-  m_LocalEulerAnglesHint: {x: 28.86, y: 20.3, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
@@ -1477,6 +1575,7 @@ GameObject:
   - component: {fileID: 2365209500720248271}
   - component: {fileID: 3110856158169445341}
   - component: {fileID: 2895752189896748737}
+  - component: {fileID: 1823373266058655792}
   m_Layer: 5
   m_Name: PlayerCanvas
   m_TagString: Untagged
@@ -1497,6 +1596,8 @@ RectTransform:
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1126275704977660038}
+  - {fileID: 3528843280623785478}
+  - {fileID: 6044037698359287445}
   m_Father: {fileID: 3277032878273129937}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1567,6 +1668,112 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &1823373266058655792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8548813393972588767}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b344bd96f89d564b8fe20843009d524, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &8679843388151489240
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3528843280623785478}
+  - component: {fileID: 4489312335062025467}
+  - component: {fileID: 9145464232588276862}
+  m_Layer: 5
+  m_Name: AmmoSegmentsLeft
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &3528843280623785478
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8679843388151489240}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 33.3, y: 33.3, z: 33.3}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 4084713901390769357}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -51.7, y: 0}
+  m_SizeDelta: {x: 0.91, y: 0.59}
+  m_Pivot: {x: 0, y: 0.5}
+--- !u!114 &4489312335062025467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8679843388151489240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 0
+  m_StartCorner: 3
+  m_StartAxis: 0
+  m_CellSize: {x: 0.15, y: 0.25}
+  m_Spacing: {x: 0.02, y: 0.02}
+  m_Constraint: 0
+  m_ConstraintCount: 2
+--- !u!114 &9145464232588276862
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8679843388151489240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3d7f05372e23054f8677855270d9e58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  owner: {fileID: 710144131943992869}
+  resourceType: 3
+  segmentsContainer: {fileID: 3528843280623785478}
+  ghostContainer: {fileID: 8869821126790049586}
+  segmentPrefab: {fileID: 3907973244284706425, guid: fbcc8ad9ca2ba1247ac15802f47c65ba, type: 3}
+  activeColor: {r: 1, g: 1, b: 1, a: 0.7529412}
+  spentColor: {r: 0.2830189, g: 0.2830189, b: 0.2830189, a: 0.2}
+  refillColor: {r: 0.8679245, g: 0.52128756, b: 0.09416164, a: 1}
+  hideEmptySegments: 0
+  ejectDirection: {x: 0, y: 1}
+  ejectDistance: 0.2
+  ejectDuration: 0.1
+  randomSpreadAngle: 0
+  randomTorqueAngle: 0
+  animateRefill: 1
+  refillDuration: 0.15
+  refillStartScale: 1.5
+  dynamicCellSizing: 1
+  referenceAmmoCount: 10
+  maxSegmentsPerRow: 6
+  maxCellScale: 2
 --- !u!1001 &3421355208182264019
 PrefabInstance:
   m_ObjectHideFlags: 0

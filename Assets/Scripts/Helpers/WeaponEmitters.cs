@@ -132,14 +132,16 @@ public class SwarmMissileEmitter : WeaponEmitter
     [Tooltip("Forces missiles to shoot upwards before tracking")]
     public float UpwardEjectBias = 1.5f;
 
-    [Header("Itano Wobble")]
+    [Header("Itano Zigzag (The Circus)")]
     [Tooltip("Time before the missile actually starts chasing the target")]
     public float HomingDelay = 0.4f;
-    public float TurnSpeed = 180f;
-    [Tooltip("How aggressively the missile swerves off-path")]
-    public float WobbleIntensity = 2.5f;
-    [Tooltip("How fast the missile wiggles")]
-    public float WobbleSpeed = 15f;
+    public float TurnSpeed = 250f;
+    [Tooltip("How far off the direct line to the target the missile pulls")]
+    public float ZigzagIntensity = 4f;
+    [Tooltip("How many times per second the missile changes its zigzag direction")]
+    public float ZigzagFrequency = 4f;
+    [Tooltip("How violently it snaps to the new trajectory (higher = sharper snap)")]
+    public float SnapSharpness = 20f;
 
     [Header("Explosion")]
     public float ExplosionRadius = 5f;
@@ -199,8 +201,9 @@ public class SwarmMissileEmitter : WeaponEmitter
                 upwardBias: UpwardEjectBias,
                 delay: HomingDelay,
                 turnSpd: TurnSpeed,
-                wobbleInt: WobbleIntensity,
-                wobbleSpd: WobbleSpeed,
+                zigInt: ZigzagIntensity,
+                zigFreq: ZigzagFrequency,
+                snapSharp: SnapSharpness,
                 expRad: ExplosionRadius,
                 hitVfx: HitParticlePrefab
             );
@@ -216,18 +219,29 @@ public class ItanoMissileBehavior : MonoBehaviour
     private float maxSpeed;
     private float acceleration;
     private float turnSpeed;
-    private float wobbleIntensity;
-    private float wobbleSpeed;
     private float explosionRadius;
     private float homingDelay;
     private GameObject hitVfx;
 
+    // Zigzag properties
+    private float zigzagIntensity;
+    private float zigzagFrequency;
+    private float snapSharpness;
+
     private float currentSpeed;
     private float timeAlive;
-    private float randomSeed;
     private Vector3 currentVelocity;
 
-    public void Initialize(Transform target, int damage, float maxSpeed, float accel, float ejectSpeed, float spread, float upwardBias, float delay, float turnSpd, float wobbleInt, float wobbleSpd, float expRad, GameObject hitVfx)
+    // Trajectory tracking
+    private Vector3 baseDir;
+    private float timeSinceLastSnap;
+    private float currentZigzagInterval;
+    private Vector2 currentZigzagDir;
+
+    private bool hasOvershot = false;
+    private float closestDistance = float.MaxValue;
+
+    public void Initialize(Transform target, int damage, float maxSpeed, float accel, float ejectSpeed, float spread, float upwardBias, float delay, float turnSpd, float zigInt, float zigFreq, float snapSharp, float expRad, GameObject hitVfx)
     {
         this.target = target;
         this.damage = damage;
@@ -235,30 +249,34 @@ public class ItanoMissileBehavior : MonoBehaviour
         this.acceleration = accel;
         this.homingDelay = delay;
         this.turnSpeed = turnSpd;
-        this.wobbleIntensity = wobbleInt;
-        this.wobbleSpeed = wobbleSpd;
+        this.zigzagIntensity = zigInt;
+        this.zigzagFrequency = zigFreq;
+        this.snapSharpness = snapSharp;
         this.explosionRadius = expRad;
         this.hitVfx = hitVfx;
 
-        this.randomSeed = Random.Range(0f, 100f);
         this.currentSpeed = ejectSpeed;
 
-        // Calculate chaotic ejection trajectory
+        this.currentZigzagDir = Random.insideUnitCircle.normalized;
+        this.currentZigzagInterval = (1f / Mathf.Max(0.1f, zigzagFrequency)) * Random.Range(0.8f, 1.2f);
+        this.timeSinceLastSnap = 0f;
+
         Vector3 spreadDir = Quaternion.Euler(
             Random.Range(-spread, spread) * 0.5f,
             Random.Range(-spread, spread),
             0
         ) * transform.forward;
 
-        // Force the missile upwards/outwards for the classic anime arc
         spreadDir += transform.up * Random.Range(upwardBias * 0.5f, upwardBias);
         spreadDir += transform.right * Random.Range(-upwardBias * 0.5f, upwardBias * 0.5f);
         spreadDir.Normalize();
 
+        this.baseDir = spreadDir;
+
         transform.rotation = Quaternion.LookRotation(spreadDir);
         currentVelocity = spreadDir * currentSpeed;
 
-        Destroy(gameObject, 8f); // Absolute max lifetime failsafe
+        Destroy(gameObject, 6f); 
     }
 
     void Update()
@@ -268,45 +286,66 @@ public class ItanoMissileBehavior : MonoBehaviour
 
         if (timeAlive > homingDelay)
         {
-            // Ignite thrusters and accelerate
+            //TODO: ignite thrusters, I wanna put vfx here
             currentSpeed = Mathf.MoveTowards(currentSpeed, maxSpeed, acceleration * dt);
 
-            Vector3 targetDir = transform.forward;
-            float distToTarget = 100f; // Default high if no target
+            float distToTarget = 100f;
 
             if (target != null && target.gameObject.activeInHierarchy)
             {
-                // Aim slightly ahead of or directly at target center
                 Vector3 targetCenter = target.position + Vector3.up * 1f;
-                targetDir = (targetCenter - transform.position).normalized;
+                Vector3 dirToTarget = (targetCenter - transform.position).normalized;
                 distToTarget = Vector3.Distance(transform.position, targetCenter);
+
+                if (!hasOvershot)
+                {
+                    closestDistance = Mathf.Min(closestDistance, distToTarget);
+
+                    if (distToTarget < 15f && distToTarget > closestDistance + 1.5f)
+                    {
+                        hasOvershot = true; // Lock lost!
+                    }
+                    else
+                    {
+                        baseDir = Vector3.RotateTowards(baseDir, dirToTarget, turnSpeed * Mathf.Deg2Rad * dt, 0f);
+                    }
+                }
             }
 
-            // 1. TIGHTER WOBBLE: Calculate stable axes relative to the target line, NOT the missile's local rotation.
-            // Using the missile's local rotation causes a centrifugal feedback loop that pushes it away!
-            Vector3 stableRight = Vector3.Cross(Vector3.up, targetDir).normalized;
-            if (stableRight == Vector3.zero) stableRight = Vector3.right; // Fallback if pointing straight up/down
-            Vector3 stableUp = Vector3.Cross(targetDir, stableRight).normalized;
+            timeSinceLastSnap += dt;
+            if (timeSinceLastSnap >= currentZigzagInterval)
+            {
+                currentZigzagDir = Random.insideUnitCircle.normalized;
+                timeSinceLastSnap = 0f;
+                currentZigzagInterval = (1f / Mathf.Max(0.1f, zigzagFrequency)) * Random.Range(0.5f, 1.5f);
+            }
 
-            float t = timeAlive * wobbleSpeed + randomSeed;
-            Vector3 wobble = (stableRight * Mathf.Cos(t) + stableUp * Mathf.Sin(t * 1.3f)) * wobbleIntensity;
+            Vector3 stableRight = Vector3.Cross(Vector3.up, baseDir).normalized;
+            if (stableRight == Vector3.zero) stableRight = Vector3.right; // Fallback
+            Vector3 stableUp = Vector3.Cross(baseDir, stableRight).normalized;
 
-            // 2. HIT ASSURANCE: Decay the wobble to 0 as we get close so it actually hits!
-            float distanceFactor = Mathf.Clamp01(distToTarget / 15f); // Wobble starts dying off within 15 meters
-            wobble *= distanceFactor;
 
-            Vector3 desiredDir = (targetDir + wobble).normalized;
+            float distanceFactor = hasOvershot ? 1f : Mathf.Clamp01((distToTarget - 8f) / 17f);
 
-            // 3. SNAPPING ASSURANCE: Increase turn speed by 4x when right next to the target to prevent orbiting
-            float activeTurnSpeed = target != null ? Mathf.Lerp(turnSpeed * 4f, turnSpeed, distanceFactor) : turnSpeed;
+            Vector3 zigzagOffset = (stableRight * currentZigzagDir.x + stableUp * currentZigzagDir.y) * (zigzagIntensity * 0.25f * distanceFactor);
 
-            // Swerve towards the trajectory
+            Vector3 desiredDir = (baseDir + zigzagOffset).normalized;
+
+            float activeTurnSpeed = snapSharpness * 50f;
+
+            //final destination
+            if (distToTarget < 12f && target != null && !hasOvershot)
+            {
+                Vector3 targetCenter = target.position + Vector3.up * 1f;
+                desiredDir = (targetCenter - transform.position).normalized;
+                activeTurnSpeed = Mathf.Max(activeTurnSpeed, turnSpeed * 5f); // uber fast tracking
+            }
+
             Quaternion targetRot = Quaternion.LookRotation(desiredDir);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, activeTurnSpeed * dt);
         }
         else
         {
-            // Hang time: Air friction slows the missile briefly before tracking begins
             currentSpeed = Mathf.Lerp(currentSpeed, currentSpeed * 0.5f, dt * 3f);
         }
 

@@ -1844,34 +1844,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
-    - target: {fileID: 795642713667131383, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
-      propertyPath: ejectDirection.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 795642713667131383, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
-      propertyPath: maxSegmentsPerRow
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 795642713667131383, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
-      propertyPath: referenceAmmoCount
-      value: 50
-      objectReference: {fileID: 0}
     - target: {fileID: 2365209500720248271, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 330585545}
-    - target: {fileID: 3535220540018301013, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
-      propertyPath: ejectDirection.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3535220540018301013, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
-      propertyPath: maxSegmentsPerRow
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 3535220540018301013, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
-      propertyPath: referenceAmmoCount
-      value: 50
-      objectReference: {fileID: 0}
     - target: {fileID: 5302953482092962902, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
       propertyPath: m_Camera
       value: 
@@ -1928,18 +1904,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7823867463858182011, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
-      propertyPath: primaryWeapon
-      value: 
-      objectReference: {fileID: 11400000, guid: d4f9007d1226a3c44a0e12f0fd26cbee, type: 2}
-    - target: {fileID: 7823867463858182011, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
-      propertyPath: secondaryWeapon
-      value: 
-      objectReference: {fileID: 11400000, guid: d5195fb6bfde9fc44ab9ab4ea3ed4e78, type: 2}
-    - target: {fileID: 7823867463858182011, guid: c05e5ed1e463c954da9af00d1d74c9ba, type: 3}
-      propertyPath: leftShoulderWeapon
-      value: 
-      objectReference: {fileID: 11400000, guid: 1757f36e76458014da61f8821034bcdd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
