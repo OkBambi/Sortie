@@ -9,12 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bd08bad97a39a84bb66f2ac77e930f5, type: 3}
-  m_Name: FastStraightProjectile
+  m_Script: {fileID: 11500000, guid: 3e9bc242ad3ab464392ea96e0673b819, type: 3}
+  m_Name: BasicRifleShot
   m_EditorClassIdentifier: 
   BaseDamage: 0
-  BulletForce: 200
-  BulletLifetime: 1
+  BulletForce: 80
+  BulletLifetime: 2
   IsHoming: 0
   HomingTurnSpeed: 5
   ExplosionRadius: 0

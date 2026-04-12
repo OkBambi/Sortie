@@ -16,5 +16,5 @@ MonoBehaviour:
   MaxAmmo: 60
   ReloadTime: 1.5
   TriggerModule: {fileID: 11400000, guid: d5c6f14d05733424b986f8429f5c6197, type: 2}
-  EmitterModule: {fileID: 11400000, guid: b4631bd9c0ad4dd4c8eefe6cb596bff2, type: 2}
+  EmitterModule: {fileID: 11400000, guid: deadd637ec6bc31468d834345847dc47, type: 2}
   FireSound: Shot

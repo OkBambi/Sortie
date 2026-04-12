@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: ItanoCircus
-  m_EditorClassIdentifier: Assembly-CSharp::SwarmMissileEmitter
+  m_Script: {fileID: 11500000, guid: 931f3a68ef5596c4f9fada29a8e89497, type: 3}
+  m_Name: ItanoCircusMissile
+  m_EditorClassIdentifier: 
   BaseDamage: 0
   MissilesPerVolley: 1
   DelayBetweenMissiles: 0.05
@@ -21,11 +21,11 @@ MonoBehaviour:
   SpreadAngle: 60
   UpwardEjectBias: 1.5
   HomingDelay: 0.4
-  TurnSpeed: 220
-  ZigzagIntensity: 6
-  ZigzagFrequency: 8
-  SnapSharpness: 100
-  ExplosionRadius: 5
+  TurnSpeed: 250
+  ZigzagIntensity: 8
+  ZigzagFrequency: 4
+  SnapSharpness: 600
+  ExplosionRadius: 8
   MissilePrefab: {fileID: 8261646690717617109, guid: f1ffe32c28fcf304f9b0e9a9ceda5a56, type: 3}
   MuzzleFlashPrefab: {fileID: 0}
   HitParticlePrefab: {fileID: 0}

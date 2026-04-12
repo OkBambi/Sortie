@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public abstract class BaseEnemy : MonoBehaviour, IDamage, ITarget, IHealth
+public abstract class BaseEnemy : MonoBehaviour, IDamage, ITarget, IHealth, IResourceProvider
 {
     [Header("Universal Stats")]
     public float maxHealth;
@@ -41,5 +41,21 @@ public abstract class BaseEnemy : MonoBehaviour, IDamage, ITarget, IHealth
     public virtual void ChangeHealth(float amount)
     {
         currentHealth += amount;
+    }
+
+    public float GetResourcePercentage(ResourceType type)
+    {
+        if (type == ResourceType.Health) { return currentHealth / maxHealth; }
+        else return 0;
+    }
+
+    public int GetResourceCurrent(ResourceType type)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public int GetResourceMax(ResourceType type)
+    {
+        throw new System.NotImplementedException();
     }
 }
