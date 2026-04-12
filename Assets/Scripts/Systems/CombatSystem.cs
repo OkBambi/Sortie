@@ -35,6 +35,10 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
     [Tooltip("How fast the indicator lerps to the target or cursor")]
     [SerializeField] private float indicatorLerpSpeed = 25f;
 
+    [Header("Multi-Lock UI")]
+    [Tooltip("The UI template that gets stamped onto multiple targets")]
+    [SerializeField] private GameObject multiLockTemplate;
+
     [Header("Lock-On Line")]
     [SerializeField] private LineRenderer lockOnLine;
     [Tooltip("How much space (in world units) to leave empty at the ends of the line")]
@@ -61,12 +65,16 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
     private ITarget lockedTarget;
 
     private Vector3 currentTargetPoint;
-
     private Vector3 currentRawAimPoint;
     private Vector3 currentTargetCenterMass;
 
     private Image indicatorImage;
     private CombatInput previousInput;
+
+    private List<GameObject> multiLockUIPool = new List<GameObject>();
+    private int activeMultiLockUICount = 0;
+    private Dictionary<WeaponInstance, List<Transform>> currentMultiLocks = new Dictionary<WeaponInstance, List<Transform>>();
+    private List<ITarget> cachedVisibleTargets = new List<ITarget>();
 
     void Start()
     {
@@ -111,19 +119,17 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
     {
         if (characterRoot == null || torso == null) return;
 
+        // Primary Single-Target Lock On Logic
         RaycastHit[] hits = Physics.SphereCastAll(input.AimRay, hoverRadius, Mathf.Infinity, targetLayer);
-
         ITarget bestTarget = null;
         float closestDistToRay = float.MaxValue;
 
         foreach (var hit in hits)
         {
             ITarget hitTarget = hit.collider.GetComponentInParent<ITarget>();
-
             if (hitTarget != null && hitTarget.IsValid)
             {
                 float distToRay = Vector3.Cross(input.AimRay.direction, hitTarget.Transform.position - input.AimRay.origin).magnitude;
-
                 if (distToRay < closestDistToRay)
                 {
                     closestDistToRay = distToRay;
@@ -139,8 +145,7 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
                 currentHoverTime += Time.deltaTime;
                 if (currentHoverTime >= lockOnTimeRequired && lockedTarget != bestTarget)
                 {
-                    lockedTarget = bestTarget; // LOCK ON
-                    Debug.Log($"<color=green>[CombatSystem] Locked onto: {lockedTarget.Transform.name}</color>");
+                    lockedTarget = bestTarget;
                 }
             }
             else
@@ -158,10 +163,8 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
         if (lockedTarget != null)
         {
             float dist = Vector3.Distance(characterRoot.position, lockedTarget.Transform.position);
-
             if (!lockedTarget.IsValid || dist > lockOnMaxDistance || (hoveringTarget != null && hoveringTarget != lockedTarget && currentHoverTime >= lockOnTimeRequired))
             {
-                Debug.Log($"<color=red>[CombatSystem] Lost lock on: {lockedTarget.Transform.name}</color>");
                 lockedTarget = null;
             }
         }
@@ -186,23 +189,13 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
         if (lockedTarget != null)
         {
             float projSpeed = 100f;
-
-            if (loadoutSlots[0] != null && loadoutSlots[0].Data != null)
+            if (loadoutSlots[0] != null && loadoutSlots[0].Data != null && loadoutSlots[0].Data.EmitterModule is ProjectileEmitter projEmitter)
             {
-                if (loadoutSlots[0].Data.EmitterModule is ProjectileEmitter projEmitter)
-                {
-                    projSpeed = projEmitter.BulletForce;
-                }
+                projSpeed = projEmitter.BulletForce;
             }
 
             currentTargetCenterMass = lockedTarget.Transform.position + (Vector3.up * 0.8f);
-
-            currentTargetPoint = CalculateInterceptCourse(
-                shootingPoint.position,
-                currentTargetCenterMass,
-                lockedTarget.Velocity,
-                projSpeed
-            );
+            currentTargetPoint = CalculateInterceptCourse(shootingPoint.position, currentTargetCenterMass, lockedTarget.Velocity, projSpeed);
         }
         else
         {
@@ -211,24 +204,10 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
 
         if (lockOnIndicator != null)
         {
-            Vector3 targetIndicatorPos;
+            Vector3 targetIndicatorPos = lockedTarget != null ? lockedTarget.Transform.position : currentTargetPoint;
+            if (indicatorImage != null) indicatorImage.color = lockedTarget != null ? Color.yellow : Color.white;
 
-            if (lockedTarget != null)
-            {
-                if (indicatorImage != null) indicatorImage.color = Color.yellow;
-                targetIndicatorPos = lockedTarget.Transform.position;
-            }
-            else
-            {
-                if (indicatorImage != null) indicatorImage.color = Color.white;
-                targetIndicatorPos = currentTargetPoint;
-            }
-
-            lockOnIndicator.transform.position = Vector3.Lerp(
-                lockOnIndicator.transform.position,
-                targetIndicatorPos,
-                Time.deltaTime * indicatorLerpSpeed
-            );
+            lockOnIndicator.transform.position = Vector3.Lerp(lockOnIndicator.transform.position, targetIndicatorPos, Time.deltaTime * indicatorLerpSpeed);
 
             if (Camera.main != null)
             {
@@ -243,29 +222,20 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
             {
                 Vector3 lineStart = currentRawAimPoint + (Vector3.up * 0.1f);
                 Vector3 lineEnd = lockOnIndicator.transform.position;
-
                 Vector3 dir = lineEnd - lineStart;
-                float dist = dir.magnitude;
 
-                if (dist > lineGapDistance * 2f)
+                if (dir.magnitude > lineGapDistance * 2f)
                 {
                     if (!lockOnLine.enabled) lockOnLine.enabled = true;
-
-                    Vector3 startPos = lineStart + (dir.normalized * lineGapDistance);
-                    Vector3 endPos = lineEnd - (dir.normalized * lineGapDistance);
-
-                    lockOnLine.SetPosition(0, startPos);
-                    lockOnLine.SetPosition(1, endPos);
+                    lockOnLine.SetPosition(0, lineStart + (dir.normalized * lineGapDistance));
+                    lockOnLine.SetPosition(1, lineEnd - (dir.normalized * lineGapDistance));
                 }
                 else
                 {
                     if (lockOnLine.enabled) lockOnLine.enabled = false;
                 }
             }
-            else
-            {
-                if (lockOnLine.enabled) lockOnLine.enabled = false;
-            }
+            else if (lockOnLine.enabled) lockOnLine.enabled = false;
         }
 
         Vector3 direction = (currentTargetPoint - torso.position).normalized;
@@ -281,11 +251,9 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
     private Vector3 CalculateInterceptCourse(Vector3 shooterPos, Vector3 targetPos, Vector3 targetVel, float projSpeed)
     {
         Vector3 dirToTarget = targetPos - shooterPos;
-
         float a = Vector3.Dot(targetVel, targetVel) - (projSpeed * projSpeed);
         float b = 2f * Vector3.Dot(targetVel, dirToTarget);
         float c = Vector3.Dot(dirToTarget, dirToTarget);
-
         float discriminant = (b * b) - (4f * a * c);
 
         if (discriminant > 0f)
@@ -293,18 +261,129 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
             float t1 = (-b + Mathf.Sqrt(discriminant)) / (2f * a);
             float t2 = (-b - Mathf.Sqrt(discriminant)) / (2f * a);
             float t = (t1 > 0f && t2 > 0f) ? Mathf.Min(t1, t2) : Mathf.Max(t1, t2);
-
             if (t > 0f) return targetPos + (targetVel * t);
         }
-
         return targetPos;
+    }
+
+    private GameObject GetMultiLockUI()
+    {
+        if (multiLockTemplate == null) return null;
+
+        if (activeMultiLockUICount < multiLockUIPool.Count)
+        {
+            var ui = multiLockUIPool[activeMultiLockUICount];
+            ui.SetActive(true);
+            activeMultiLockUICount++;
+            return ui;
+        }
+        else
+        {
+            var ui = Instantiate(multiLockTemplate);
+            multiLockUIPool.Add(ui);
+            activeMultiLockUICount++;
+            return ui;
+        }
+    }
+
+    public List<Transform> GetMultiTargets(WeaponInstance instance)
+    {
+        if (currentMultiLocks.TryGetValue(instance, out var targets))
+        {
+            return targets;
+        }
+        return null;
+    }
+
+    public void RegisterMultiLockCharge(WeaponInstance instance, int maxLocks, float lockTimePerTarget)
+    {
+        int currentLockCapacity = Mathf.FloorToInt(instance.CurrentCharge / lockTimePerTarget);
+        currentLockCapacity = Mathf.Clamp(currentLockCapacity, 0, maxLocks);
+
+        if (!currentMultiLocks.TryGetValue(instance, out List<Transform> paintedTargets))
+        {
+            paintedTargets = new List<Transform>();
+        }
+
+        if (currentLockCapacity == 0)
+        {
+            paintedTargets.Clear();
+            currentMultiLocks[instance] = paintedTargets;
+            return;
+        }
+
+        paintedTargets.RemoveAll(t => t == null || !t.gameObject.activeInHierarchy);
+
+
+        if (paintedTargets.Count < currentLockCapacity)
+        {
+            foreach (var visibleTarget in cachedVisibleTargets)
+            {
+                if (visibleTarget != null && visibleTarget.IsValid && !paintedTargets.Contains(visibleTarget.Transform))
+                {
+                    paintedTargets.Add(visibleTarget.Transform);
+                    if (paintedTargets.Count >= currentLockCapacity) break; 
+                }
+            }
+        }
+
+        foreach (var t in paintedTargets)
+        {
+            if (t == null) continue;
+            GameObject ui = GetMultiLockUI();
+            if (ui != null && Camera.main != null)
+            {
+                ui.transform.position = t.position; 
+                ui.transform.rotation = Camera.main.transform.rotation;
+            }
+        }
+
+        currentMultiLocks[instance] = paintedTargets;
     }
 
     public void ProcessCombat(CombatInput input)
     {
         HandleAimingAndLockOn(input);
 
-        //ok now we actually use each weapon individually for the prediction
+        activeMultiLockUICount = 0;
+        foreach (var ui in multiLockUIPool)
+        {
+            if (ui != null) ui.SetActive(false);
+        }
+
+        List<WeaponInstance> keysToRemove = new List<WeaponInstance>();
+        foreach (var kvp in currentMultiLocks)
+        {
+            if (kvp.Key.CurrentCharge <= 0f) keysToRemove.Add(kvp.Key);
+        }
+        foreach (var k in keysToRemove) currentMultiLocks.Remove(k);
+
+        cachedVisibleTargets.Clear();
+        Collider[] hits = Physics.OverlapSphere(characterRoot.position, lockOnMaxDistance, targetLayer);
+
+        foreach (var hit in hits)
+        {
+            ITarget hitTarget = hit.GetComponentInParent<ITarget>();
+            if (hitTarget != null && hitTarget.IsValid && !cachedVisibleTargets.Contains(hitTarget))
+            {
+                //spherecast is being annoying so CONE IT IS
+                Vector3 dirToTarget = (hitTarget.Transform.position - input.AimRay.origin).normalized;
+                if (Vector3.Dot(input.AimRay.direction, dirToTarget) > 0.6f)
+                {
+                    cachedVisibleTargets.Add(hitTarget);
+                }
+            }
+        }
+        
+
+        //good fucking god this is annoying
+        cachedVisibleTargets.Sort((a, b) =>
+        {
+            float distA = Vector3.Cross(input.AimRay.direction, a.Transform.position - input.AimRay.origin).magnitude;
+            float distB = Vector3.Cross(input.AimRay.direction, b.Transform.position - input.AimRay.origin).magnitude;
+            return distA.CompareTo(distB);
+        });
+
         for (int i = 0; i < 4; i++)
         {
             if (loadoutSlots[i] != null)
@@ -314,18 +393,13 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
                 if (lockedTarget != null)
                 {
                     float projSpeed = 100f;
-
                     if (loadoutSlots[i].Data != null && loadoutSlots[i].Data.EmitterModule is ProjectileEmitter projEmitter)
                     {
                         projSpeed = projEmitter.BulletForce;
                     }
 
                     loadoutSlots[i].Context.TargetPoint = CalculateInterceptCourse(
-                        shootingPoint.position,
-                        currentTargetCenterMass,
-                        lockedTarget.Velocity,
-                        projSpeed
-                    );
+                        shootingPoint.position, currentTargetCenterMass, lockedTarget.Velocity, projSpeed);
                 }
                 else
                 {
@@ -334,6 +408,7 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
             }
         }
 
+        // weapons
         HandleWeapon(loadoutSlots[0], input.ShootPrimary, previousInput.ShootPrimary, input.Reload);
         HandleWeapon(loadoutSlots[1], input.ShootSecondary, previousInput.ShootSecondary, input.Reload);
         HandleWeapon(loadoutSlots[2], input.ShootLeftShoulder, previousInput.ShootLeftShoulder, input.Reload);
@@ -349,7 +424,6 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
         bool isDown = isHeld && !wasHeld;
         bool isUp = !isHeld && wasHeld;
 
-        // Auto-Reload trigger
         if ((isReloadInput || (isHeld && weapon.CurrentAmmo <= 0)) && !weapon.IsReloading && weapon.CurrentAmmo < weapon.Data.MaxAmmo)
         {
             StartCoroutine(ReloadRoutine(weapon));
@@ -379,28 +453,26 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
         weapon.IsReloading = false;
     }
 
+    // Resource provider implementations
     public float GetResourcePercentage(ResourceType type)
     {
         if (resourceToSlotMap.TryGetValue(type, out int slotIndex))
         {
             var weapon = loadoutSlots[slotIndex];
-            if (weapon != null && weapon.Data != null && weapon.Data.MaxAmmo > 0)
-                return (float)weapon.CurrentAmmo / weapon.Data.MaxAmmo;
+            if (weapon != null && weapon.Data != null && weapon.Data.MaxAmmo > 0) return (float)weapon.CurrentAmmo / weapon.Data.MaxAmmo;
         }
         return 0f;
     }
 
     public int GetResourceCurrent(ResourceType type)
     {
-        if (resourceToSlotMap.TryGetValue(type, out int slotIndex))
-            return loadoutSlots[slotIndex]?.CurrentAmmo ?? 0;
+        if (resourceToSlotMap.TryGetValue(type, out int slotIndex)) return loadoutSlots[slotIndex]?.CurrentAmmo ?? 0;
         return 0;
     }
 
     public int GetResourceMax(ResourceType type)
     {
-        if (resourceToSlotMap.TryGetValue(type, out int slotIndex))
-            return loadoutSlots[slotIndex]?.Data.MaxAmmo ?? 0;
+        if (resourceToSlotMap.TryGetValue(type, out int slotIndex)) return loadoutSlots[slotIndex]?.Data.MaxAmmo ?? 0;
         return 0;
     }
 }

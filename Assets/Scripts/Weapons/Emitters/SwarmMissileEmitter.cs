@@ -1,4 +1,6 @@
 using UnityEngine;
+using System.Collections.Generic;
+using System.Collections;
 
 [CreateAssetMenu(menuName = "Combat/Modules/Emitters/Swarm Missile")]
 public class SwarmMissileEmitter : WeaponEmitter
@@ -6,7 +8,8 @@ public class SwarmMissileEmitter : WeaponEmitter
     public int BaseDamage = 15;
 
     [Header("Volley Settings")]
-    public int MissilesPerVolley = 4;
+    [Tooltip("The guaranteed number of missiles fired every time you pull the trigger.")]
+    public int MissilesPerVolley = 12;
     public float DelayBetweenMissiles = 0.05f;
 
     [Header("Flight Dynamics")]
@@ -33,21 +36,43 @@ public class SwarmMissileEmitter : WeaponEmitter
 
     public override void Fire(WeaponInstance instance, float chargeModifier)
     {
-        if (MissilesPerVolley <= 1)
+        CombatSystem combatSys = instance.Context.Runner as CombatSystem;
+        List<Transform> targets = combatSys != null ? combatSys.GetMultiTargets(instance) : new List<Transform>();
+
+        if (targets == null || targets.Count == 0)
         {
-            SpawnSingleMissile(instance, chargeModifier);
+            targets = new List<Transform>();
+            if (instance.Context.CurrentTarget != null)
+            {
+                targets.Add(instance.Context.CurrentTarget);
+            }
+        }
+        
+        int totalMissilesToFire = Mathf.Max(MissilesPerVolley, targets.Count);
+
+        if (totalMissilesToFire <= 1)
+        {
+            Transform singleTarget = targets.Count > 0 ? targets[0] : null;
+            SpawnSingleMissile(instance, chargeModifier, singleTarget);
         }
         else
         {
-            instance.Context.Runner.StartCoroutine(FireVolleyRoutine(instance, chargeModifier));
+            instance.Context.Runner.StartCoroutine(FireVolleyRoutine(instance, chargeModifier, targets, totalMissilesToFire));
         }
     }
 
-    private System.Collections.IEnumerator FireVolleyRoutine(WeaponInstance instance, float chargeModifier)
+    private IEnumerator FireVolleyRoutine(WeaponInstance instance, float chargeModifier, List<Transform> targets, int totalMissiles)
     {
-        for (int i = 0; i < MissilesPerVolley; i++)
+        for (int i = 0; i < totalMissiles; i++)
         {
-            SpawnSingleMissile(instance, chargeModifier);
+            Transform target = null;
+
+            if (targets.Count > 0)
+            {
+                target = targets[i % targets.Count];
+            }
+
+            SpawnSingleMissile(instance, chargeModifier, target);
 
             if (DelayBetweenMissiles > 0)
             {
@@ -56,7 +81,7 @@ public class SwarmMissileEmitter : WeaponEmitter
         }
     }
 
-    private void SpawnSingleMissile(WeaponInstance instance, float chargeModifier)
+    private void SpawnSingleMissile(WeaponInstance instance, float chargeModifier, Transform target)
     {
         if (MuzzleFlashPrefab != null)
         {
@@ -66,11 +91,10 @@ public class SwarmMissileEmitter : WeaponEmitter
 
         int finalDamage = Mathf.RoundToInt(BaseDamage * Mathf.Max(0.1f, chargeModifier));
 
-        // Call the centralized manager
         ItanoCircusHandler.Instance.SpawnMissile(
             instance.Context.MuzzlePoint.position,
             instance.Context.MuzzlePoint.rotation,
-            instance.Context.CurrentTarget,
+            target,
             finalDamage,
             MaxSpeed,
             Acceleration,
