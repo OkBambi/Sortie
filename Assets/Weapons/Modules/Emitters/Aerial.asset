@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19e568eaeef2bf42ba97b77cf81ca40, type: 3}
+  m_Name: Aerial
+  m_EditorClassIdentifier: 
+  BaseHealth: 100
+  formationOffset: {x: 0, y: 2, z: 0}
+  followSmoothTime: 0.15
+  rotationSpeed: 10
+  hoverSpeed: 3
+  hoverAmplitude: 0.2
+  GunbitModel: {fileID: 5105233523611394397, guid: 68037bccc7a92e7409bed0513d9fe580, type: 3}
+  GunbitWeaponData: {fileID: 11400000, guid: d5195fb6bfde9fc44ab9ab4ea3ed4e78, type: 2}
