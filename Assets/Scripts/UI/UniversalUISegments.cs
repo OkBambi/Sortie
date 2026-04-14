@@ -38,8 +38,6 @@ public class UniversalUISegments : MonoBehaviour
 
     [Header("Dynamic Sizing")]
     [SerializeField] private bool dynamicCellSizing = true;
-    [Tooltip("The ammo count that your Grid Layout Group's current Cell Size is perfectly tuned for.")]
-    [SerializeField] private int referenceAmmoCount = 30;
     [Tooltip("Max segments per row before wrapping down to a new row.")]
     [SerializeField] private int maxSegmentsPerRow = 10;
     [Tooltip("Maximum scale multiplier for cell sizes. Prevents low-ammo weapons from having massive segments.")]

@@ -9,7 +9,7 @@ public abstract class BaseEnemy : MonoBehaviour, IDamage, ITarget, IHealth, IRes
     private Vector3 _lastPosition;
     private Vector3 _currentVelocity;
 
-    public Transform Transform => transform;
+    public Transform Transform => transform != null ? transform : null;
 
     public Vector3 Velocity => _currentVelocity;
 

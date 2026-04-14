@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b3b4df72388a96f45aa0265a9f19b0be
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 15095
+  packageName: Explosive Toon VFX Texture Pack
+  packageVersion: 1
+  assetPath: Assets/Textures/Sprites/toonPack/Examples/sprite_toonExplosion_b_example.prefab
+  uploadId: 3265

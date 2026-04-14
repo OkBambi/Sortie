@@ -232,7 +232,6 @@ MonoBehaviour:
   refillDuration: 0.15
   refillStartScale: 1.5
   dynamicCellSizing: 1
-  referenceAmmoCount: 50
   maxSegmentsPerRow: 10
   maxCellScale: 2
 --- !u!1 &710144131943992869
@@ -443,7 +442,6 @@ MonoBehaviour:
   refillDuration: 0.15
   refillStartScale: 1.5
   dynamicCellSizing: 1
-  referenceAmmoCount: 10
   maxSegmentsPerRow: 6
   maxCellScale: 2
 --- !u!1 &938452073613948387
@@ -1371,7 +1369,6 @@ MonoBehaviour:
   refillDuration: 0.15
   refillStartScale: 1.5
   dynamicCellSizing: 1
-  referenceAmmoCount: 50
   maxSegmentsPerRow: 10
   maxCellScale: 2
 --- !u!1 &8287659406383813339
@@ -1772,7 +1769,6 @@ MonoBehaviour:
   refillDuration: 0.15
   refillStartScale: 1.5
   dynamicCellSizing: 1
-  referenceAmmoCount: 10
   maxSegmentsPerRow: 6
   maxCellScale: 2
 --- !u!1001 &3421355208182264019
