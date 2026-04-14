@@ -312,6 +312,7 @@ MonoBehaviour:
     m_Bits: 64
   lockOnIndicator: {fileID: 2026730044133393184}
   indicatorLerpSpeed: 25
+  multiLockTemplate: {fileID: 8633771276420050602, guid: c897f6cc11e23c64aa064bbf5366ba80, type: 3}
   lockOnLine: {fileID: 8421096914555027842}
   lineGapDistance: 0.3
   shootingPoint: {fileID: 7494968560873920993}
@@ -319,7 +320,7 @@ MonoBehaviour:
   primaryWeapon: {fileID: 11400000, guid: d4f9007d1226a3c44a0e12f0fd26cbee, type: 2}
   secondaryWeapon: {fileID: 11400000, guid: d5195fb6bfde9fc44ab9ab4ea3ed4e78, type: 2}
   leftShoulderWeapon: {fileID: 11400000, guid: 1757f36e76458014da61f8821034bcdd, type: 2}
-  rightShoulderWeapon: {fileID: 11400000, guid: 1757f36e76458014da61f8821034bcdd, type: 2}
+  rightShoulderWeapon: {fileID: 11400000, guid: da7e2c9fbb044594f80fa36332afcb88, type: 2}
 --- !u!1 &750661143890449628
 GameObject:
   m_ObjectHideFlags: 0

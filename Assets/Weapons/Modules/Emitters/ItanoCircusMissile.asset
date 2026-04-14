@@ -28,4 +28,4 @@ MonoBehaviour:
   ExplosionRadius: 8
   MissilePrefab: {fileID: 8261646690717617109, guid: f1ffe32c28fcf304f9b0e9a9ceda5a56, type: 3}
   MuzzleFlashPrefab: {fileID: 0}
-  HitParticlePrefab: {fileID: 3189978565904617274, guid: 40ee19564510a0d45a7d9e0632547271, type: 3}
+  HitParticlePrefab: {fileID: 0}

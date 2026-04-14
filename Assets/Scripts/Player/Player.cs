@@ -31,6 +31,10 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth
 
         _mainCamera = Camera.main;
 
+        playerCamera = GameObject.FindAnyObjectByType<PlayerCamera>();
+        cameraSpring = GameObject.FindAnyObjectByType<CameraSpring>();
+        cameraLean = GameObject.FindAnyObjectByType<CameraLean>();
+
         playerMovement.Initialize();
         playerCamera.Initialize(playerMovement.GetCameraTarget());
         cameraSpring.Initialize();
