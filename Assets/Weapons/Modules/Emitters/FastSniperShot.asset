@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e9bc242ad3ab464392ea96e0673b819, type: 3}
   m_Name: FastSniperShot
   m_EditorClassIdentifier: 
-  BaseDamage: 0
+  BaseDamage: 89
   BulletForce: 180
   BulletLifetime: 2
   IsHoming: 0

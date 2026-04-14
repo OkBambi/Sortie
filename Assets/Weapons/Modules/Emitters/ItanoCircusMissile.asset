@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 931f3a68ef5596c4f9fada29a8e89497, type: 3}
   m_Name: ItanoCircusMissile
   m_EditorClassIdentifier: 
-  BaseDamage: 0
+  BaseDamage: 167
   MissilesPerVolley: 12
   DelayBetweenMissiles: 0.05
   MaxSpeed: 80

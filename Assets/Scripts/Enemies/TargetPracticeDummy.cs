@@ -77,7 +77,7 @@ public class TargetPracticeDummy : BaseEnemy
         if (currentHealth <= 0)
         {
             Debug.Log("Dummy Destroyed!");
-            // Destroy(gameObject);
+            Destroy(gameObject);
         }
     }
 
