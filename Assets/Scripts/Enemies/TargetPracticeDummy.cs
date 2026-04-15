@@ -17,10 +17,17 @@ public class TargetPracticeDummy : BaseEnemy
     public float feedbackDuration = 0.5f;
     public float wobbleIntensity = 20f;
 
+    [Header("Death Settings")]
+    public float deathFlingDuration = 2f;
+    public float deathFlingSpeed = 15f;
+    public float deathSpinSpeed = 1080f; 
+    public Color deathColor = new Color(0.15f, 0.15f, 0.15f); 
+
     private Vector3 startPosition;
     private Quaternion originalRotation;
     private Color originalColor = Color.white;
     private Coroutine feedbackCoroutine;
+    private bool isDead = false;
 
     protected override void Start()
     {
@@ -53,6 +60,8 @@ public class TargetPracticeDummy : BaseEnemy
     {
         base.Update();
 
+        if (isDead) return;
+
         if (enableStrafing && strafeDistance > 0 && strafeSpeed > 0)
         {
             float offset = Mathf.Sin(Time.time * strafeSpeed) * strafeDistance;
@@ -62,23 +71,59 @@ public class TargetPracticeDummy : BaseEnemy
 
     public override void TakeDamage(float damage)
     {
+        if (isDead) return;
+
         base.ChangeHealth(-damage); //subtract damage from currentHealth
 
         Debug.Log($"{name} took {damage} damage");
 
         if (feedbackCoroutine != null) StopCoroutine(feedbackCoroutine);
 
-        float randomSpeedX = Random.Range(30f, 45f);
-        float randomSpeedZ = Random.Range(20f, 35f);
-        float randomDir = Random.value > 0.5f ? 1f : -1f;
-
-        feedbackCoroutine = StartCoroutine(VisualFeedbackRoutine(randomSpeedX, randomSpeedZ, randomDir));
-
         if (currentHealth <= 0)
         {
             Debug.Log("Dummy Destroyed!");
-            Destroy(gameObject);
+            isDead = true;
+            StartCoroutine(DeathRoutine());
         }
+        else
+        {
+            float randomSpeedX = Random.Range(30f, 45f);
+            float randomSpeedZ = Random.Range(20f, 35f);
+            float randomDir = Random.value > 0.5f ? 1f : -1f;
+
+            feedbackCoroutine = StartCoroutine(VisualFeedbackRoutine(randomSpeedX, randomSpeedZ, randomDir));
+        }
+    }
+
+    private IEnumerator DeathRoutine()
+    {
+        if (dummyRenderer != null && dummyRenderer.material.HasProperty(colorPropertyName))
+        {
+            dummyRenderer.material.SetColor(colorPropertyName, deathColor);
+        }
+
+        float elapsed = 0f;
+
+        Vector3 flingVelocity = (-transform.forward + Vector3.up).normalized * deathFlingSpeed;
+
+        Vector3 randomSpinAxis = new Vector3(
+            Random.Range(-1f, 1f),
+            Random.Range(-1f, 1f),
+            Random.Range(-1f, 1f)
+        ).normalized;
+
+        while (elapsed < deathFlingDuration)
+        {
+            elapsed += Time.deltaTime;
+
+            transform.position += flingVelocity * Time.deltaTime;
+            flingVelocity += Physics.gravity * Time.deltaTime;
+
+            transform.Rotate(randomSpinAxis, deathSpinSpeed * Time.deltaTime);
+
+            yield return null;
+        }
+        Destroy(gameObject);
     }
 
     private IEnumerator VisualFeedbackRoutine(float speedX, float speedZ, float dirMult)
