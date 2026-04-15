@@ -20,4 +20,4 @@ MonoBehaviour:
   ExplosionRadius: 0
   BulletVisualPrefab: {fileID: 7141802491186774219, guid: 5a8a517a1256ee1429770c6b114ec3e3, type: 3}
   MuzzleFlashPrefab: {fileID: 100008, guid: 0d93bfd11e7a3684f9df301526a69c0d, type: 3}
-  HitParticlePrefab: {fileID: 100000, guid: a602bdc189d554a43b6e3547dcbc5b7a, type: 3}
+  HitParticlePrefab: {fileID: 100000, guid: 815d7c08ed356df49aadd092a3fada7e, type: 3}

@@ -1927,6 +1927,10 @@ PrefabInstance:
       propertyPath: enableStrafing
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2484544915016101177, guid: 27d3db94aadb8354b95baa34398bee5b, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3267183547991276595, guid: 27d3db94aadb8354b95baa34398bee5b, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
