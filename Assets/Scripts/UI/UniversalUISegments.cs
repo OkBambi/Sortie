@@ -46,6 +46,8 @@ public class UniversalUISegments : MonoBehaviour
     private IResourceProvider _resourceProvider;
     private List<Image> _spawnedSegments = new List<Image>();
 
+    private Dictionary<Image, Coroutine> _activeRefills = new Dictionary<Image, Coroutine>();
+
     private int _currentMax = -1;
     private int _lastKnownCurrent = -1;
 
@@ -124,7 +126,14 @@ public class UniversalUISegments : MonoBehaviour
                 {
                     if (i < _spawnedSegments.Count)
                     {
-                        StartCoroutine(RefillClickRoutine(_spawnedSegments[i]));
+                        Image img = _spawnedSegments[i];
+
+                        if (_activeRefills.TryGetValue(img, out Coroutine existing) && existing != null)
+                        {
+                            StopCoroutine(existing);
+                        }
+
+                        _activeRefills[img] = StartCoroutine(RefillClickRoutine(img));
                     }
                 }
             }
@@ -193,6 +202,12 @@ public class UniversalUISegments : MonoBehaviour
 
     private void ClearSegments()
     {
+        foreach (var kvp in _activeRefills)
+        {
+            if (kvp.Value != null) StopCoroutine(kvp.Value);
+        }
+        _activeRefills.Clear();
+
         foreach (var img in _spawnedSegments)
         {
             if (img != null) Destroy(img.gameObject);
@@ -205,6 +220,9 @@ public class UniversalUISegments : MonoBehaviour
         for (int i = 0; i < _spawnedSegments.Count; i++)
         {
             Image img = _spawnedSegments[i];
+
+            if (_activeRefills.ContainsKey(img)) continue;
+
             if (i < currentAmount)
             {
                 img.gameObject.SetActive(true);
@@ -221,6 +239,15 @@ public class UniversalUISegments : MonoBehaviour
     private void EjectSegment(int index)
     {
         Image originalImg = _spawnedSegments[index];
+
+        // no refill animation if ejecting
+        if (_activeRefills.TryGetValue(originalImg, out Coroutine existing) && existing != null)
+        {
+            StopCoroutine(existing);
+            _activeRefills.Remove(originalImg);
+
+            originalImg.rectTransform.localScale = Vector3.one;
+        }
 
         originalImg.color = spentColor;
         originalImg.gameObject.SetActive(!hideEmptySegments);
@@ -307,6 +334,11 @@ public class UniversalUISegments : MonoBehaviour
         {
             rect.localScale = targetScale;
             img.color = activeColor;
+
+            if (_activeRefills.ContainsKey(img))
+            {
+                _activeRefills.Remove(img);
+            }
         }
     }
 }
