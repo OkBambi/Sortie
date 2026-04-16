@@ -13,6 +13,8 @@ public class ObjectiveInspector : PropertyDrawer
         var titleField = new PropertyField(property.FindPropertyRelative("title"));
         var descField = new PropertyField(property.FindPropertyRelative("description"), "Description");
 
+
+        // PROGRESS BAR
         var currentAmountProp = property.FindPropertyRelative("currentAmount");
         var requiredAmountProp = property.FindPropertyRelative("requiredAmount");
 
@@ -34,7 +36,8 @@ public class ObjectiveInspector : PropertyDrawer
         progressBar.TrackPropertyValue(currentAmountProp, _ => updateProgressBar());
         progressBar.TrackPropertyValue(requiredAmountProp, _ => updateProgressBar());
 
-        // Add fields to the container.
+
+        // ADDIN STUFF
         container.Add(idField);
         container.Add(titleField);
         container.Add(descField);
