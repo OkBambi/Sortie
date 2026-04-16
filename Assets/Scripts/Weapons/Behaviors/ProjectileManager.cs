@@ -176,7 +176,8 @@ public class ProjectileManager : MonoBehaviour
             {
                 if (col.TryGetComponent<IDamage>(out var aoeDamageable))
                 {
-                    aoeDamageable.TakeDamage(p.Damage);
+                    // Pass the explosion center (hitPoint) so targets are pushed outwards
+                    aoeDamageable.TakeDamage(p.Damage, hitPoint);
                 }
             }
         }
@@ -188,7 +189,7 @@ public class ProjectileManager : MonoBehaviour
             {
                 if (col.TryGetComponent<IDamage>(out var damageable))
                 {
-                    damageable.TakeDamage(p.Damage);
+                    damageable.TakeDamage(p.Damage, hitPoint);
                     break;
                 }
             }

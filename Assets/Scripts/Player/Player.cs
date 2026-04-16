@@ -96,7 +96,7 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth
         cameraLean.UpdateLean(deltaTime, state.Acceleration, cameraTarget.up);
     }
 
-    public void TakeDamage(float damage)
+    public void TakeDamage(float damage, Vector3 hitPos)
     {
         //egh
     }

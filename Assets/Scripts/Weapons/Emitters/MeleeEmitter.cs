@@ -13,7 +13,7 @@ public class MeleeEmitter : WeaponEmitter
     {
         if (SwingVFXPrefab != null)
         {
-            GameObject vfx = Instantiate(SwingVFXPrefab, instance.Context.MuzzlePoint.position, 
+            GameObject vfx = Instantiate(SwingVFXPrefab, instance.Context.MuzzlePoint.position,
                 instance.Context.PlayerRoot.rotation, instance.Context.PlayerRoot);
             Destroy(vfx, 0.5f);
         }
@@ -27,7 +27,7 @@ public class MeleeEmitter : WeaponEmitter
         {
             if (enemy.TryGetComponent<IDamage>(out var damageable))
             {
-                damageable.TakeDamage(finalDamage);
+                damageable.TakeDamage(finalDamage, instance.Context.PlayerRoot.position);
             }
         }
     }

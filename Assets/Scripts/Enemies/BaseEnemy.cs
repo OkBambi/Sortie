@@ -36,7 +36,7 @@ public abstract class BaseEnemy : MonoBehaviour, IDamage, ITarget, IHealth, IRes
         _lastPosition = transform.position;
     }
 
-    public abstract void TakeDamage(float damage);
+    public abstract void TakeDamage(float damage, Vector3 hitPos);
 
     public virtual void ChangeHealth(float amount)
     {

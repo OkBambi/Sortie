@@ -22,7 +22,7 @@ public class RaycastEmitter : WeaponEmitter
 
             if (hit.collider.TryGetComponent<IDamage>(out var damageable))
             {
-                damageable.TakeDamage(finalDamage);
+                damageable.TakeDamage(finalDamage, hit.point);
             }
         }
     }

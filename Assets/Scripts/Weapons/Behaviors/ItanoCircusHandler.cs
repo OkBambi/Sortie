@@ -197,13 +197,18 @@ public class ItanoCircusHandler : MonoBehaviour
             {
                 if (col.TryGetComponent<IDamage>(out var aoeDamageable))
                 {
-                    aoeDamageable.TakeDamage(m.Damage);
+                    // Pass the explosion center (hit.point) so targets are pushed outwards
+                    aoeDamageable.TakeDamage(m.Damage, hit.point);
                 }
             }
         }
         else
         {
-            if (hit.collider.TryGetComponent<IDamage>(out var damageable)) damageable.TakeDamage(m.Damage);
+            if (hit.collider.TryGetComponent<IDamage>(out var damageable))
+            {
+                // Pass exact impact point
+                damageable.TakeDamage(m.Damage, hit.point);
+            }
         }
     }
 

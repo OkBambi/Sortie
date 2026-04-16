@@ -20,8 +20,8 @@ public class TargetPracticeDummy : BaseEnemy
     [Header("Death Settings")]
     public float deathFlingDuration = 2f;
     public float deathFlingSpeed = 15f;
-    public float deathSpinSpeed = 1080f; 
-    public Color deathColor = new Color(0.15f, 0.15f, 0.15f); 
+    public float deathSpinSpeed = 1080f;
+    public Color deathColor = new Color(0.15f, 0.15f, 0.15f);
 
     private Vector3 startPosition;
     private Quaternion originalRotation;
@@ -69,7 +69,7 @@ public class TargetPracticeDummy : BaseEnemy
         }
     }
 
-    public override void TakeDamage(float damage)
+    public override void TakeDamage(float damage, Vector3 hitPos)
     {
         if (isDead) return;
 
@@ -83,7 +83,7 @@ public class TargetPracticeDummy : BaseEnemy
         {
             Debug.Log("Dummy Destroyed!");
             isDead = true;
-            StartCoroutine(DeathRoutine());
+            StartCoroutine(DeathRoutine(hitPos));
         }
         else
         {
@@ -95,7 +95,7 @@ public class TargetPracticeDummy : BaseEnemy
         }
     }
 
-    private IEnumerator DeathRoutine()
+    private IEnumerator DeathRoutine(Vector3 hitPos)
     {
         if (dummyRenderer != null && dummyRenderer.material.HasProperty(colorPropertyName))
         {
@@ -104,7 +104,11 @@ public class TargetPracticeDummy : BaseEnemy
 
         float elapsed = 0f;
 
-        Vector3 flingVelocity = (-transform.forward + Vector3.up).normalized * deathFlingSpeed;
+        Vector3 knockbackDir = (transform.position - hitPos).normalized;
+        if (knockbackDir == Vector3.zero) knockbackDir = -transform.forward; // Failsafe
+
+        knockbackDir.y = 0.3f;
+        Vector3 flingVelocity = knockbackDir.normalized * deathFlingSpeed;
 
         Vector3 randomSpinAxis = new Vector3(
             Random.Range(-1f, 1f),

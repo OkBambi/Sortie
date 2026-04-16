@@ -19,7 +19,6 @@ public class PilebunkerEmitter : WeaponEmitter
 
     public override void Fire(WeaponInstance instance, float chargeModifier)
     {
-        // Handle Movement (Dash / Recoil)
         if (instance.Context.PlayerRoot.TryGetComponent(out IWeaponForceReceiver forceReceiver))
         {
             Vector3 finalForce = Vector3.zero;
@@ -49,7 +48,7 @@ public class PilebunkerEmitter : WeaponEmitter
         {
             if (enemy.TryGetComponent<IDamage>(out var damageable))
             {
-                damageable.TakeDamage(finalDamage);
+                damageable.TakeDamage(finalDamage, instance.Context.PlayerRoot.position);
             }
         }
     }
