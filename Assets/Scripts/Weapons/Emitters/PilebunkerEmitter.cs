@@ -19,18 +19,18 @@ public class PilebunkerEmitter : WeaponEmitter
 
     public override void Fire(WeaponInstance instance, float chargeModifier)
     {
-        if (instance.Context.PlayerRoot.TryGetComponent(out IWeaponForceReceiver forceReceiver))
-        {
-            Vector3 finalForce = Vector3.zero;
+        //if (instance.Context.PlayerRoot.TryGetComponent(out IWeaponForceReceiver forceReceiver))
+        //{
+        //    Vector3 finalForce = Vector3.zero;
 
-            if (ForwardDashForce > 0)
-                finalForce += instance.Context.PlayerRoot.forward * ForwardDashForce;
+        //    if (ForwardDashForce > 0)
+        //        finalForce += instance.Context.PlayerRoot.forward * ForwardDashForce;
 
-            if (RecoilForce > 0)
-                finalForce -= instance.Context.PlayerRoot.forward * RecoilForce;
+        //    if (RecoilForce > 0)
+        //        finalForce -= instance.Context.PlayerRoot.forward * RecoilForce;
 
-            forceReceiver.ApplyWeaponForce(finalForce);
-        }
+        //    forceReceiver.ApplyWeaponForce(finalForce);
+        //}
 
         if (StrikeVFXPrefab != null)
         {
