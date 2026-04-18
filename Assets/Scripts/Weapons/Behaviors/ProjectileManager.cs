@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -176,20 +177,42 @@ public class ProjectileManager : MonoBehaviour
             {
                 if (col.TryGetComponent<IDamage>(out var aoeDamageable))
                 {
-                    // Pass the explosion center (hitPoint) so targets are pushed outwards
                     aoeDamageable.TakeDamage(p.Damage, hitPoint);
+
+                    // Trigger global valid target event
+                    if (col.TryGetComponent<ITarget>(out var target) && target.IsValid)
+                    {
+                        CombatEventManager.FireEvent(EventHooks.OnDealDamage, new DamageEventData
+                        {
+                            Owner = p.Source != null ? p.Source.GetComponent<MonoBehaviour>() : null,
+                            Target = target,
+                            DamageAmount = p.Damage,
+                            IsCriticalHit = false
+                        });
+                    }
                 }
             }
         }
         else
         {
-            // For single target, we check a tiny sphere to catch what we hit
             Collider[] pointHit = Physics.OverlapSphere(hitPoint, 0.5f);
             foreach (var col in pointHit)
             {
                 if (col.TryGetComponent<IDamage>(out var damageable))
                 {
                     damageable.TakeDamage(p.Damage, hitPoint);
+
+                    // Trigger global valid target event
+                    if (col.TryGetComponent<ITarget>(out var target) && target.IsValid)
+                    {
+                        CombatEventManager.FireEvent(EventHooks.OnDealDamage, new DamageEventData
+                        {
+                            Owner = p.Source != null ? p.Source.GetComponent<MonoBehaviour>() : null,
+                            Target = target,
+                            DamageAmount = p.Damage,
+                            IsCriticalHit = false
+                        });
+                    }
                     break;
                 }
             }

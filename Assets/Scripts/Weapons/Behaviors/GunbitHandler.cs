@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -44,6 +45,26 @@ public class GunbitHandler : MonoBehaviour
         else Destroy(gameObject);
     }
 
+    // Subscribe to the global combat event manager
+    void OnEnable()
+    {
+        CombatEventManager.OnCombatEvent += HandleCombatEvent;
+    }
+
+    // Unsubscribe when disabled to prevent memory leaks
+    void OnDisable()
+    {
+        CombatEventManager.OnCombatEvent -= HandleCombatEvent;
+    }
+
+    private void HandleCombatEvent(EventHooks hook, ItemEventData data)
+    {
+        // Only trigger if damage was dealt and we have a valid target!
+        if (hook == EventHooks.OnDealDamage && data.Target != null && data.Target.IsValid)
+        {
+            CommandSwarmToFire(data.Target.Transform);
+        }
+    }
 
     public void SpawnGunbit(Transform moveRoot, Transform aimRoot, Vector3 offset, float smoothTime, float rotSpeed, float hSpeed, float hAmp, float health, GameObject visualObj, WeaponData weaponData)
     {
@@ -76,7 +97,7 @@ public class GunbitHandler : MonoBehaviour
             bitWeapon.Initialize(weaponData, ctx);
         }
 
-        float randomizedSmoothTime = smoothTime * Random.Range(0.6f, 1.4f);
+        float randomizedSmoothTime = smoothTime * UnityEngine.Random.Range(0.6f, 1.4f);
 
         activeGunbits.Add(new ActiveGunbit
         {
@@ -90,14 +111,14 @@ public class GunbitHandler : MonoBehaviour
             HoverSpeed = hSpeed,
             HoverAmplitude = hAmp,
             CurrentVelocity = Vector3.zero,
-            RandomHoverOffset = Random.Range(0f, 100f),
+            RandomHoverOffset = UnityEngine.Random.Range(0f, 100f),
             Health = health,
 
             // init orbit
-            OrbitAxis = Random.onUnitSphere, 
-            OrbitRadius = Random.Range(1.5f, 3.5f),
-            OrbitSpeed = Random.Range(30f, 90f) * (Random.value > 0.5f ? 1f : -1f), 
-            CurrentOrbitAngle = Random.Range(0f, 360f), 
+            OrbitAxis = UnityEngine.Random.onUnitSphere,
+            OrbitRadius = UnityEngine.Random.Range(1.5f, 3.5f),
+            OrbitSpeed = UnityEngine.Random.Range(30f, 90f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f),
+            CurrentOrbitAngle = UnityEngine.Random.Range(0f, 360f),
 
             Weapon = bitWeapon,
             IsPreparingToFire = false
@@ -110,9 +131,12 @@ public class GunbitHandler : MonoBehaviour
         {
             if (bit.Weapon != null && !bit.Weapon.IsReloading && bit.Weapon.CurrentAmmo > 0)
             {
-                bit.CurrentTarget = target;
-                bit.FireDelayTimer = Random.Range(0f, maxRandomDelay);
-                bit.IsPreparingToFire = true;
+                if (!bit.IsPreparingToFire)
+                {
+                    bit.CurrentTarget = target;
+                    bit.FireDelayTimer = UnityEngine.Random.Range(0f, maxRandomDelay);
+                    bit.IsPreparingToFire = true;
+                }
             }
         }
     }
@@ -156,7 +180,7 @@ public class GunbitHandler : MonoBehaviour
             {
                 if (hit.collider.CompareTag("Ground"))
                 {
-                    float minClearanceHeight = hit.point.y + 0.6f; 
+                    float minClearanceHeight = hit.point.y + 0.6f;
                     if (targetPosition.y < minClearanceHeight)
                     {
                         targetPosition.y = minClearanceHeight;
@@ -173,14 +197,17 @@ public class GunbitHandler : MonoBehaviour
                     bit.FollowSmoothTime
                 );
 
-                Quaternion targetRotation = bit.AimRoot.rotation;
+                Vector3 outwardDirection = (bit.VisualPrefab.transform.position - bit.MoveRoot.position).normalized;
+                if (outwardDirection == Vector3.zero) outwardDirection = Vector3.up; // Failsafe
+
+                Quaternion targetRotation = Quaternion.LookRotation(bit.AimRoot.forward, outwardDirection);
 
                 if ((bit.IsPreparingToFire || bit.CurrentTarget != null) && bit.CurrentTarget.gameObject.activeInHierarchy)
                 {
                     Vector3 dirToTarget = (bit.CurrentTarget.position - bit.VisualPrefab.transform.position).normalized;
                     if (dirToTarget != Vector3.zero)
                     {
-                        targetRotation = Quaternion.LookRotation(dirToTarget);
+                        targetRotation = Quaternion.LookRotation(dirToTarget, outwardDirection);
                     }
                 }
 

@@ -135,7 +135,7 @@ MonoBehaviour:
   feedbackDuration: 0.5
   wobbleIntensity: 20
   deathFlingDuration: 1
-  deathFlingSpeed: 100
+  deathFlingSpeed: 70
   deathSpinSpeed: 1080
   deathColor: {r: 0.15, g: 0.15, b: 0.15, a: 1}
 --- !u!1001 &7184211267399856143

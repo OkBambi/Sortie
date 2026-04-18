@@ -28,7 +28,7 @@ public enum EventHooks
     OnHeal,
     /// <summary>Triggers right before the owner dies</summary>
     OnDeath,
-    /// <summary>Triggers when the owner kills something</summary>
+    /// <summary>People die when they are killed</summary>
     OnKill,
 
     // WEAPONS

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -48,13 +49,13 @@ public class ItanoCircusHandler : MonoBehaviour
     public void SpawnMissile(Vector3 startPos, Quaternion startRot, Transform target, int damage, float maxSpeed, float accel, float ejectSpeed, float spread, float upwardBias, float delay, float turnSpd, float zigInt, float zigFreq, float snapSharp, float expRad, GameObject visualObj, GameObject hitVfx)
     {
         Vector3 spreadDir = Quaternion.Euler(
-            Random.Range(-spread, spread) * 0.5f,
-            Random.Range(-spread, spread),
+            UnityEngine.Random.Range(-spread, spread) * 0.5f,
+            UnityEngine.Random.Range(-spread, spread),
             0
         ) * (startRot * Vector3.forward);
 
-        spreadDir += (startRot * Vector3.up) * Random.Range(upwardBias * 0.5f, upwardBias);
-        spreadDir += (startRot * Vector3.right) * Random.Range(-upwardBias * 0.5f, upwardBias * 0.5f);
+        spreadDir += (startRot * Vector3.up) * UnityEngine.Random.Range(upwardBias * 0.5f, upwardBias);
+        spreadDir += (startRot * Vector3.right) * UnityEngine.Random.Range(-upwardBias * 0.5f, upwardBias * 0.5f);
         spreadDir.Normalize();
 
         GameObject visual = null;
@@ -82,8 +83,8 @@ public class ItanoCircusHandler : MonoBehaviour
             SnapSharpness = snapSharp,
             TimeAlive = 0f,
             TimeSinceLastSnap = 0f,
-            CurrentZigzagInterval = (1f / Mathf.Max(0.1f, zigFreq)) * Random.Range(0.8f, 1.2f),
-            CurrentZigzagDir = Random.insideUnitCircle.normalized,
+            CurrentZigzagInterval = (1f / Mathf.Max(0.1f, zigFreq)) * UnityEngine.Random.Range(0.8f, 1.2f),
+            CurrentZigzagDir = UnityEngine.Random.insideUnitCircle.normalized,
             HasOvershot = false,
             ClosestDistance = float.MaxValue,
             VisualPrefab = visual,
@@ -129,9 +130,9 @@ public class ItanoCircusHandler : MonoBehaviour
                 m.TimeSinceLastSnap += dt;
                 if (m.TimeSinceLastSnap >= m.CurrentZigzagInterval)
                 {
-                    m.CurrentZigzagDir = Random.insideUnitCircle.normalized;
+                    m.CurrentZigzagDir = UnityEngine.Random.insideUnitCircle.normalized;
                     m.TimeSinceLastSnap = 0f;
-                    m.CurrentZigzagInterval = (1f / Mathf.Max(0.1f, m.ZigzagFrequency)) * Random.Range(0.5f, 1.5f);
+                    m.CurrentZigzagInterval = (1f / Mathf.Max(0.1f, m.ZigzagFrequency)) * UnityEngine.Random.Range(0.5f, 1.5f);
                 }
 
                 Vector3 stableRight = Vector3.Cross(Vector3.up, m.BaseDir).normalized;
@@ -197,8 +198,19 @@ public class ItanoCircusHandler : MonoBehaviour
             {
                 if (col.TryGetComponent<IDamage>(out var aoeDamageable))
                 {
-                    // Pass the explosion center (hit.point) so targets are pushed outwards
                     aoeDamageable.TakeDamage(m.Damage, hit.point);
+
+                    // Trigger global valid target event
+                    if (col.TryGetComponent<ITarget>(out var target) && target.IsValid)
+                    {
+                        CombatEventManager.FireEvent(EventHooks.OnDealDamage, new DamageEventData
+                        {
+                            Owner = null, // Missiles don't currently track source, you could add it to the struct later!
+                            Target = target,
+                            DamageAmount = m.Damage,
+                            IsCriticalHit = false
+                        });
+                    }
                 }
             }
         }
@@ -206,8 +218,19 @@ public class ItanoCircusHandler : MonoBehaviour
         {
             if (hit.collider.TryGetComponent<IDamage>(out var damageable))
             {
-                // Pass exact impact point
                 damageable.TakeDamage(m.Damage, hit.point);
+
+                // Trigger global valid target event
+                if (hit.collider.TryGetComponent<ITarget>(out var target) && target.IsValid)
+                {
+                    CombatEventManager.FireEvent(EventHooks.OnDealDamage, new DamageEventData
+                    {
+                        Owner = null,
+                        Target = target,
+                        DamageAmount = m.Damage,
+                        IsCriticalHit = false
+                    });
+                }
             }
         }
     }
