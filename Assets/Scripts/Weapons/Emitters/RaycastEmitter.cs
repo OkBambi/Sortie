@@ -1,4 +1,5 @@
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 [CreateAssetMenu(menuName = "Combat/Modules/Emitters/Raycast")]
 public class RaycastEmitter : WeaponEmitter
@@ -22,6 +23,14 @@ public class RaycastEmitter : WeaponEmitter
 
             if (hit.collider.TryGetComponent<IDamage>(out var damageable))
             {
+                CombatEventManager.FireEvent(EventHooks.OnDealDamage, new DamageEventData
+                {
+                    Owner = null,
+                    Target = hit.collider.GetComponent<ITarget>(),
+                    DamageAmount = finalDamage,
+                    IsCriticalHit = false
+                });
+
                 damageable.TakeDamage(finalDamage, hit.point);
             }
         }

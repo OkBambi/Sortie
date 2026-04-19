@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Player : MonoBehaviour, ITarget, IDamage, IHealth
+public class Player : MonoBehaviour, ITarget, IDamage, IHealth, IResourceProvider
 {
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private PlayerCamera playerCamera;
@@ -14,15 +14,18 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth
     private Camera _mainCamera;
     private Ray _currentAimRay;
 
+    [SerializeField] private float maxHealth;
+    private float currentHealth;
+
     public Transform Transform => playerMovement.transform;
 
     public Vector3 Velocity => throw new System.NotImplementedException();
 
     public bool IsValid => throw new System.NotImplementedException();
 
-    public float CurrentHealth => throw new System.NotImplementedException();
+    public float CurrentHealth => currentHealth;
 
-    public float MaxHealth => throw new System.NotImplementedException();
+    public float MaxHealth => maxHealth;
 
     void Start()
     {
@@ -39,6 +42,8 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth
         playerCamera.Initialize(playerMovement.GetCameraTarget());
         cameraSpring.Initialize();
         cameraLean.Initialize();
+
+        currentHealth = maxHealth;
     }
 
     void OnDestroy()
@@ -104,5 +109,23 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth
     public void ChangeHealth(float amount)
     {
         throw new System.NotImplementedException();
+    }
+
+    public float GetResourcePercentage(ResourceType type)
+    {
+        if (type == ResourceType.Health) return currentHealth / maxHealth;
+        else return 0;
+    }
+
+    public int GetResourceCurrent(ResourceType type)
+    {
+        if (type == ResourceType.Health) return (int)currentHealth;
+        else return 0;
+    }
+
+    public int GetResourceMax(ResourceType type)
+    {
+        if (type == ResourceType.Health) return (int)maxHealth;
+        else return 0;
     }
 }

@@ -205,7 +205,7 @@ public class ItanoCircusHandler : MonoBehaviour
                     {
                         CombatEventManager.FireEvent(EventHooks.OnDealDamage, new DamageEventData
                         {
-                            Owner = null, // Missiles don't currently track source, you could add it to the struct later!
+                            Owner = null, // Missiles don't currently track source
                             Target = target,
                             DamageAmount = m.Damage,
                             IsCriticalHit = false
