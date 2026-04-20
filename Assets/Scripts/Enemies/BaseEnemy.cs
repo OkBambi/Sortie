@@ -58,4 +58,9 @@ public abstract class BaseEnemy : MonoBehaviour, IDamage, ITarget, IHealth, IRes
     {
         throw new System.NotImplementedException();
     }
+
+    public bool HasResource(ResourceType type)
+    {
+        return type == ResourceType.Health;
+    }
 }

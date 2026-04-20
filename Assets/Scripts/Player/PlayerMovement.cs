@@ -333,4 +333,9 @@ public class PlayerMovement : MonoBehaviour, ICharacterController, IResourceProv
     {
         throw new NotImplementedException();
     }
+
+    public bool HasResource(ResourceType type)
+    {
+        return type == ResourceType.Boost;
+    }
 }

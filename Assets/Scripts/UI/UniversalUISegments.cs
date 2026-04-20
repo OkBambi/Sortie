@@ -80,7 +80,15 @@ public class UniversalUISegments : MonoBehaviour
         owner = newOwner;
         if (owner != null)
         {
-            _resourceProvider = owner.GetComponentInParent<IResourceProvider>();
+            var providers = owner.GetComponentsInParent<IResourceProvider>();
+            foreach (var provider in providers)
+            {
+                if (provider.HasResource(resourceType))
+                {
+                    _resourceProvider = provider;
+                    break;
+                }
+            }
         }
         else
         {

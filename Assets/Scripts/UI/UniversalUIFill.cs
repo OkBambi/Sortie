@@ -26,7 +26,7 @@ public class UniversalUIFill : MonoBehaviour
     [Tooltip("When the resource drops below this percentage, it turns the Warning Color.")]
     [Range(0f, 1f)]
     [SerializeField] private float warningThreshold = 0.5f;
-    [SerializeField] private Color warningColor = new Color(1f, 0.6f, 0f); 
+    [SerializeField] private Color warningColor = new Color(1f, 0.6f, 0f);
 
     [Space]
     [Tooltip("When the resource drops below this percentage, it turns the Critical Color.")]
@@ -88,7 +88,15 @@ public class UniversalUIFill : MonoBehaviour
         owner = newOwner;
         if (owner != null)
         {
-            _resourceProvider = owner.GetComponentInParent<IResourceProvider>();
+            var providers = owner.GetComponentsInParent<IResourceProvider>();
+            foreach (var provider in providers)
+            {
+                if (provider.HasResource(resourceType))
+                {
+                    _resourceProvider = provider;
+                    break;
+                }
+            }
 
             if (_resourceProvider != null)
             {

@@ -15,6 +15,9 @@ public enum ResourceType
 /// </summary>
 public interface IResourceProvider
 {
+
+    bool HasResource(ResourceType type);
+
     float GetResourcePercentage(ResourceType type);
     int GetResourceCurrent(ResourceType type);
     int GetResourceMax(ResourceType type);

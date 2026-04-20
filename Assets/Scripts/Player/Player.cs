@@ -111,6 +111,11 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth, IResourceProvide
         throw new System.NotImplementedException();
     }
 
+    public bool HasResource(ResourceType type)
+    {
+        return type == ResourceType.Health;
+    }
+
     public float GetResourcePercentage(ResourceType type)
     {
         if (type == ResourceType.Health) return currentHealth / maxHealth;

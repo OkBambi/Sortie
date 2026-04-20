@@ -322,7 +322,7 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
                 if (visibleTarget != null && visibleTarget.IsValid && !paintedTargets.Contains(visibleTarget.Transform))
                 {
                     paintedTargets.Add(visibleTarget.Transform);
-                    if (paintedTargets.Count >= currentLockCapacity) break; 
+                    if (paintedTargets.Count >= currentLockCapacity) break;
                 }
             }
         }
@@ -333,7 +333,7 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
             GameObject ui = GetMultiLockUI();
             if (ui != null && Camera.main != null)
             {
-                ui.transform.position = t.position; 
+                ui.transform.position = t.position;
                 ui.transform.rotation = Camera.main.transform.rotation;
             }
         }
@@ -374,7 +374,7 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
                 }
             }
         }
-        
+
 
         //good fucking god this is annoying
         cachedVisibleTargets.Sort((a, b) =>
@@ -454,6 +454,14 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
     }
 
     // Resource provider implementations
+    public bool HasResource(ResourceType type)
+    {
+        return type == ResourceType.PrimaryAmmo ||
+               type == ResourceType.SecondaryAmmo ||
+               type == ResourceType.LeftAmmo ||
+               type == ResourceType.RightAmmo;
+    }
+
     public float GetResourcePercentage(ResourceType type)
     {
         if (resourceToSlotMap.TryGetValue(type, out int slotIndex))
