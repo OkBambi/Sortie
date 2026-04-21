@@ -45,4 +45,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings: {fileID: 0}
-  audioBindings: []
+  soundCategories:
+  - categoryName: Player SFX
+    bindings: []
+  - categoryName: Enemy SFX
+    bindings: []
+  - categoryName: UI SFX
+    bindings: []
+  - categoryName: Prop SFX
+    bindings: []
+  - categoryName: Environmental SFX
+    bindings: []
+  - categoryName: Music
+    bindings: []

@@ -14,7 +14,6 @@ GameObject:
   - component: {fileID: 7371275580465645727}
   - component: {fileID: 2559071389245032589}
   - component: {fileID: 7220727262182495582}
-  - component: {fileID: 3635113357445442994}
   m_Layer: 0
   m_Name: TheManager
   m_TagString: Untagged
@@ -102,26 +101,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   activeObjectives: []
   Player: {fileID: 0}
---- !u!114 &3635113357445442994
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4155621574553076673}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ef620f500f7658e4f89c5dae7eb5104f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  settings: {fileID: 0}
-  soundCategories:
-  - categoryName: Weapon SFX
-    audioType: 0
-    sounds:
-    - name: WeaponShot1
-      clip: {fileID: 0}
-      volume: 0
-      pitch: 0
-      loop: 0
-      source: {fileID: 0}

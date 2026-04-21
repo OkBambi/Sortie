@@ -67,11 +67,10 @@ public class PlayerMovement : MonoBehaviour, ICharacterController, IResourceProv
     [Header("Data")]
     public MovementStats Stats = new MovementStats();
 
-    [Header("Designer Events")]
-    [Tooltip("Fires whenever the player successfully jumps.")]
-    public UnityEvent onJump;
-    [Tooltip("Fires whenever the player successfully quick boosts/dashes.")]
-    public UnityEvent onDash;
+    [HideInInspector] public UnityEvent onJump;
+    [HideInInspector] public UnityEvent onDash;
+    //[HideInInspector] public UnityEvent onBoostStart;
+    //[HideInInspector] public UnityEvent onBoostEnd;
 
     // State accessible by other systems (UI, Visuals)
     public float CurrentBoost { get; private set; }
