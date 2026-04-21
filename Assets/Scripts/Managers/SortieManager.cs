@@ -36,6 +36,8 @@ public class SortieManager : MonoBehaviour
 
         //test objective
         CreateDynamicObjective("test_objective", "Testing Testing", "Get Sabrina's Number", 1);
+        CreateDynamicObjective("kill_test_dummy", "Kill Test Dummies", "Hiyyaa", 3);
+        CreateDynamicObjective("kill_basic_enemy", "Kill Enemies", "Hyuuuaaa", 3);
     }
 
     void Update()

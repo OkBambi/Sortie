@@ -1,6 +1,7 @@
-using UnityEngine;
 using KinematicCharacterController;
 using System;
+using UnityEngine;
+using UnityEngine.Events;
 
 [Serializable]
 public class MovementStats
@@ -65,6 +66,12 @@ public class PlayerMovement : MonoBehaviour, ICharacterController, IResourceProv
 
     [Header("Data")]
     public MovementStats Stats = new MovementStats();
+
+    [Header("Designer Events")]
+    [Tooltip("Fires whenever the player successfully jumps.")]
+    public UnityEvent onJump;
+    [Tooltip("Fires whenever the player successfully quick boosts/dashes.")]
+    public UnityEvent onDash;
 
     // State accessible by other systems (UI, Visuals)
     public float CurrentBoost { get; private set; }

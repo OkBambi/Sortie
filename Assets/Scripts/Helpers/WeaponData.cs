@@ -47,7 +47,7 @@ public class WeaponInstance
         CurrentAmmo--;
         LastFireTime = Time.time;
 
-        if (Context.Audio != null) Context.Audio.Play(Data.FireSound);
+        //if (Context.Audio != null) Context.Audio.Play(Data.FireSound);
 
         if (Data.EmitterModule != null)
         {

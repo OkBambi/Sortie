@@ -82,6 +82,12 @@ public class TargetPracticeDummy : BaseEnemy
         if (currentHealth <= 0)
         {
             Debug.Log("Dummy Destroyed!");
+
+            //update overarching objective
+            SortieManager.Instance.UpdateObjective("kill_basic_enemy", 1);
+            //update specific objective
+            SortieManager.Instance.UpdateObjective("kill_test_dummy", 1);
+
             isDead = true;
             StartCoroutine(DeathRoutine(hitPos));
         }

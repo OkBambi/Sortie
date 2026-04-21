@@ -1056,7 +1056,6 @@ GameObject:
   - component: {fileID: 935471930}
   - component: {fileID: 935471929}
   - component: {fileID: 935471928}
-  - component: {fileID: 935471932}
   m_Layer: 7
   m_Name: Plane
   m_TagString: Ground
@@ -1109,7 +1108,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 720ea100b5a5ea741a0e79cfb3ab65c6, type: 2}
+  - {fileID: 2100000, guid: a459023871c8b4241b88c51d8ab759d7, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1154,31 +1153,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &935471932
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 935471927}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 220ae3fbb7be10447b79906ccef31fe5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  grassMesh: {fileID: -462981019419857548, guid: 2211d3930498ecf49a608d38dc8f21fb, type: 3}
-  grassMaterial: {fileID: 2100000, guid: e62893621489d2e4aa7a23297f4919bf, type: 2}
-  areaSize: {x: 200, y: 200}
-  spacing: 0.1
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 128
-  yOffset: 0
-  baseRotation: {x: -90, y: 90, z: 0}
-  minScale: 50
-  maxScale: 100
-  faceCamera: 1
-  lockYAxis: 1
 --- !u!1001 &1001372736
 PrefabInstance:
   m_ObjectHideFlags: 0
