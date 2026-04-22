@@ -1227,6 +1227,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1073062577934235638, guid: 3d90ea78f7780df47b7b52b573b058d6, type: 3}
+      propertyPath: soundCategories.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073062577934235638, guid: 3d90ea78f7780df47b7b52b573b058d6, type: 3}
+      propertyPath: soundCategories.Array.data[6].categoryName
+      value: Music
+      objectReference: {fileID: 0}
     - target: {fileID: 3735217253896587119, guid: 3d90ea78f7780df47b7b52b573b058d6, type: 3}
       propertyPath: m_Name
       value: AudioManager

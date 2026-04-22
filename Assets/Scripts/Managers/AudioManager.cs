@@ -7,7 +7,7 @@ using UnityEngine.Events;
 [System.Serializable]
 public class AudioCategory
 {
-    [Tooltip("Name of the category (e.g., 'Player SFX' or 'Music')")]
+    [Tooltip("Name of the category")]
     public string categoryName = "New Category";
 
     [Tooltip("The audio bindings for this specific category.")]
@@ -19,16 +19,16 @@ public class EventAudioBinding
 {
     public enum AudioActionType { PlayOneShot, StartLoop, StopLoop }
 
-    [Tooltip("Drag the exact GameObject/Script from the scene here (e.g., the Player).")]
+    [Tooltip("Drag the exact GameObject/Script from the scene here")]
     public MonoBehaviour targetScript;
 
-    [Tooltip("The exact variable name of the UnityEvent (e.g., 'onJump' or 'onDash').")]
+    [Tooltip("The exact variable name of the UnityEvent")]
     public string eventName;
 
     [Tooltip("What kind of audio action should this event trigger?")]
     public AudioActionType actionType = AudioActionType.PlayOneShot;
 
-    [Tooltip("A unique string ID to identify this loop (e.g., 'PlayerBoost'). Use the exact same ID in the StopLoop binding!")]
+    [Tooltip("A unique string ID to identify this loop. Use the exact same ID in the StopLoop binding.")]
     public string loopId = "MyLoop";
 
     [Tooltip("The sound configurations.")]
@@ -39,6 +39,10 @@ public class AudioManager : MonoBehaviour
 {
     public static AudioManager instance;
     public Settings settings;
+
+    [Header("Optimization")]
+    [Tooltip("Max concurrent one-shot sounds. Prevents component bloat from machine guns/explosions.")]
+    public int maxSimultaneousSounds = 30;
 
     [Header("Categorized Event Bindings")]
     [Tooltip("Organize all your audio hooks into collapsible sections here!")]
@@ -73,8 +77,12 @@ public class AudioManager : MonoBehaviour
 
     private void HookUpSceneEvents()
     {
+        if (soundCategories == null) return;
+
         foreach (AudioCategory category in soundCategories)
         {
+            if (category == null || category.bindings == null) continue;
+
             foreach (EventAudioBinding binding in category.bindings)
             {
                 if (binding.targetScript == null || string.IsNullOrEmpty(binding.eventName)) continue;
@@ -103,11 +111,13 @@ public class AudioManager : MonoBehaviour
 
     public void ProcessBinding(EventAudioBinding binding)
     {
+        if (binding == null) return;
+
         if (binding.actionType == EventAudioBinding.AudioActionType.StopLoop)
         {
-            if (activeLoops.TryGetValue(binding.loopId, out ActiveLoopData data))
+            if (!string.IsNullOrEmpty(binding.loopId) && activeLoops.TryGetValue(binding.loopId, out ActiveLoopData data))
             {
-                if (data.source != null) data.source.Stop();
+                if (data != null && data.source != null) data.source.Stop();
             }
             return;
         }
@@ -124,12 +134,20 @@ public class AudioManager : MonoBehaviour
 
         float p = Mathf.Clamp(s.pitch + pRng, 0.1f, 3f);
         float v = Mathf.Clamp01(s.volume + vRng);
-        float masterVol = s.isMusic ? settings.music : settings.sfx;
+
+        float masterVol = 1f;
+        if (settings != null)
+        {
+            masterVol = s.isMusic ? settings.music : settings.sfx;
+        }
+
         float finalVol = v * masterVol;
 
         if (binding.actionType == EventAudioBinding.AudioActionType.StartLoop)
         {
-            if (!activeLoops.TryGetValue(binding.loopId, out ActiveLoopData loopData) || loopData.source == null)
+            if (string.IsNullOrEmpty(binding.loopId)) return;
+
+            if (!activeLoops.TryGetValue(binding.loopId, out ActiveLoopData loopData) || loopData == null || loopData.source == null)
             {
                 loopData = new ActiveLoopData { source = gameObject.AddComponent<AudioSource>() };
                 activeLoops[binding.loopId] = loopData;
@@ -148,22 +166,57 @@ public class AudioManager : MonoBehaviour
         else // PlayOneShot
         {
             AudioSource src = GetAvailableSource();
-            src.pitch = p;
-            src.volume = finalVol;
-            src.PlayOneShot(clip);
+            if (src != null)
+            {
+                src.pitch = p;
+                src.volume = finalVol;
+
+                src.clip = clip;
+                src.loop = false;
+                src.Play();
+            }
         }
     }
 
     private AudioSource GetAvailableSource()
     {
+        // Clean up any accidentally destroyed sources to prevent further nulls
+        sourcePool.RemoveAll(source => source == null);
+
+        // Try to find a completely idle source
         foreach (var src in sourcePool)
         {
             if (!src.isPlaying) return src;
         }
-        // If all pooled sources are currently playing, expand the pool
-        AudioSource newSrc = gameObject.AddComponent<AudioSource>();
-        sourcePool.Add(newSrc);
-        return newSrc;
+
+        // If all pooled sources are busy, check if we are under the component limit
+        if (sourcePool.Count < maxSimultaneousSounds)
+        {
+            AudioSource newSrc = gameObject.AddComponent<AudioSource>();
+            sourcePool.Add(newSrc);
+            return newSrc;
+        }
+
+        // VOICE STEALING: Pool is full! Recycle the sound that is closest to finishing.
+        AudioSource oldestSource = sourcePool[0];
+        float maxPlaybackPercentage = 0f;
+
+        foreach (var src in sourcePool)
+        {
+            if (src.clip != null)
+            {
+                // Calculate how close the clip is to finishing (0.0 to 1.0)
+                float percentage = src.time / Mathf.Max(src.clip.length, 0.01f);
+                if (percentage > maxPlaybackPercentage)
+                {
+                    maxPlaybackPercentage = percentage;
+                    oldestSource = src;
+                }
+            }
+        }
+
+        oldestSource.Stop(); // Cut off the old sound so it doesn't bleed over
+        return oldestSource;
     }
 
     public void UpdateVolumes()
@@ -194,11 +247,12 @@ public class EventAudioBindingDrawer : UnityEditor.PropertyDrawer
 
         int action = property.FindPropertyRelative("actionType").enumValueIndex;
 
-        float lines = 4;
-        if (action == 1 || action == 2) lines++;
+        float lines = 4; // Foldout, Target, Event Name, Action Type
+        if (action == 1 || action == 2) lines++; // Adds line for Loop ID
 
         float height = lines * (UnityEditor.EditorGUIUtility.singleLineHeight + 2);
 
+        // We don't draw the sound config if the action is StopLoop
         if (action == 0 || action == 1)
         {
             UnityEditor.SerializedProperty soundProp = property.FindPropertyRelative("sound");
@@ -228,11 +282,11 @@ public class EventAudioBindingDrawer : UnityEditor.PropertyDrawer
             UnityEditor.SerializedProperty loopIdProp = property.FindPropertyRelative("loopId");
             UnityEditor.SerializedProperty soundProp = property.FindPropertyRelative("sound");
 
-            //target
+            // 1. Draw Target
             UnityEditor.EditorGUI.PropertyField(rect, targetProp);
             rect.y += lineHeight;
 
-            //event dropdown
+            // 2. Draw Event Dropdown
             if (targetProp.objectReferenceValue != null)
             {
                 MonoBehaviour target = targetProp.objectReferenceValue as MonoBehaviour;
@@ -266,19 +320,20 @@ public class EventAudioBindingDrawer : UnityEditor.PropertyDrawer
 
             rect.y += lineHeight;
 
-            //grab action type
+            // 3. Draw Action Type
             UnityEditor.EditorGUI.PropertyField(rect, actionProp);
             rect.y += lineHeight;
 
             int action = actionProp.enumValueIndex;
 
+            // 4. Draw Loop ID (Only if StartLoop or StopLoop)
             if (action == 1 || action == 2)
             {
                 UnityEditor.EditorGUI.PropertyField(rect, loopIdProp);
                 rect.y += lineHeight;
             }
 
-            //grab sound config
+            // 5. Draw Sound Config (Only if PlayOneShot or StartLoop)
             if (action == 0 || action == 1)
             {
                 UnityEditor.EditorGUI.PropertyField(rect, soundProp, true);
