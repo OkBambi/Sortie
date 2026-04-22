@@ -3,19 +3,23 @@ using UnityEngine;
 [System.Serializable]
 public class Sound
 {
-    //public string name;
-    public AudioClip clip;
+    [Tooltip("Add multiple clips here. The manager will pick a random one each time.")]
+    public AudioClip[] clips;
 
     [Range(0f, 1f)]
     public float volume = 1f;
 
+    [Tooltip("Randomize volume slightly each time it plays (+/- this value)")]
+    [Range(0f, 0.5f)]
+    public float volumeVariance = 0f;
+
     [Range(0.1f, 3f)]
     public float pitch = 1f;
 
-    public bool loop;
-    public bool isMusic;
+    [Tooltip("Randomize pitch slightly each time it plays (+/- this value)")]
+    [Range(0f, 1f)]
+    public float pitchVariance = 0f;
 
-    // The AudioSource is created at runtime, so we hide it to keep the inspector clean.
-    [HideInInspector]
-    public AudioSource source;
+    [Tooltip("Check this if the sound should use the Music volume setting instead of SFX.")]
+    public bool isMusic;
 }
