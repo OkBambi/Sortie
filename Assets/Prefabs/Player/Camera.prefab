@@ -31,7 +31,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8504948724114295443}
-  - {fileID: 4118544495280816824}
   m_Father: {fileID: 3597917487781974094}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2405500725564845021
@@ -62,7 +61,7 @@ GameObject:
   - component: {fileID: 4428714843891986171}
   m_Layer: 0
   m_Name: UI Camera
-  m_TagString: MainCamera
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -75,12 +74,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3279631961280839563}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.2976948, y: 0.1988568, z: -0.06354801, w: 0.9315554}
-  m_LocalPosition: {x: -18.47, y: 32.78, z: -41.3}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 3566625835241355771}
+  m_Father: {fileID: 8504948724114295443}
   m_LocalEulerAnglesHint: {x: 48.35, y: 17.9, z: 0}
 --- !u!20 &8203044972060474726
 Camera:
@@ -257,7 +256,8 @@ Transform:
   m_LocalPosition: {x: -18.47, y: 32.78, z: -41.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 4118544495280816824}
   m_Father: {fileID: 3566625835241355771}
   m_LocalEulerAnglesHint: {x: 48.35, y: 17.9, z: 0}
 --- !u!20 &5981180612127381798
@@ -299,7 +299,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 87
+    m_Bits: 215
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -389,7 +389,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8654252635223348867}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -409,6 +409,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f574242f1aa2dda419cb750a05741fc9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainCameraLeaf: {fileID: 5981180612127381798}
   lookAheadAmount: 0.15
   maxLookAheadDistance: 5
   smoothSpeed: 10
+  cameraStates:
+  - StateName: Gameplay
+    LocalPositionOffset: {x: -18.47, y: 32.78, z: -41.3}
+    LocalRotationOffset: {x: 35.444374, y: 24.09986, z: 0}
+    TargetTransform: {fileID: 0}
+    FieldOfView: 30
+    TransitionSpeed: 10
+  - StateName: PauseMenu
+    LocalPositionOffset: {x: 0, y: 0, z: 0}
+    LocalRotationOffset: {x: 0, y: 0, z: 0}
+    TargetTransform: {fileID: 0}
+    FieldOfView: 60
+    TransitionSpeed: 10

@@ -45,6 +45,7 @@ public struct CharacterState
 public struct CharacterInput
 {
     public Quaternion Rotation;
+    public Quaternion CameraRotation; // Explicit separated camera orientation
     public Vector2 Move;
     public bool Jump;
     public bool JumpSustain;
@@ -74,7 +75,7 @@ public class PlayerMovement : MonoBehaviour, ICharacterController, IResourceProv
     public bool IsSprinting { get; private set; }
     public bool IsDashing { get { return _dashTimer > 0f; } }
 
-    private bool _wasSprinting; // Track previous frame's sprint state
+    private bool _wasSprinting;
 
     private CharacterState _state;
     private CharacterState _lastState;
@@ -113,29 +114,19 @@ public class PlayerMovement : MonoBehaviour, ICharacterController, IResourceProv
 
     public void UpdateInput(CharacterInput input)
     {
+        // Used solely for visual rotation of the character mesh
         _requestedRotation = input.Rotation;
 
-        Transform camTransform = Camera.main != null ? Camera.main.transform : null;
-        Vector3 cameraForward;
-        Vector3 cameraRight;
+        // NEW: Use the explicit CameraRotation for stable, decoupled movement axes
+        Vector3 referenceForward = input.CameraRotation * Vector3.forward;
+        Vector3 referenceRight = input.CameraRotation * Vector3.right;
 
-        if (camTransform != null)
-        {
-            cameraForward = camTransform.forward;
-            cameraRight = camTransform.right;
-        }
-        else
-        {
-            cameraForward = input.Rotation * Vector3.forward;
-            cameraRight = input.Rotation * Vector3.right;
-        }
+        referenceForward.y = 0f;
+        referenceForward.Normalize();
+        referenceRight.y = 0f;
+        referenceRight.Normalize();
 
-        cameraForward.y = 0f;
-        cameraForward.Normalize();
-        cameraRight.y = 0f;
-        cameraRight.Normalize();
-
-        _requestedMovement = (cameraRight * input.Move.x) + (cameraForward * input.Move.y);
+        _requestedMovement = (referenceRight * input.Move.x) + (referenceForward * input.Move.y);
         _requestedMovement = Vector3.ClampMagnitude(_requestedMovement, 1f);
 
         var wasRequestingJump = _requestedJump;

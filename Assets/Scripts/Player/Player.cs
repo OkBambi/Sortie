@@ -17,14 +17,12 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth, IResourceProvide
     [SerializeField] private float maxHealth;
     private float currentHealth;
 
+    private bool _isPaused;
+
     public Transform Transform => playerMovement.transform;
-
     public Vector3 Velocity => throw new System.NotImplementedException();
-
     public bool IsValid => throw new System.NotImplementedException();
-
     public float CurrentHealth => currentHealth;
-
     public float MaxHealth => maxHealth;
 
     void Start()
@@ -53,6 +51,15 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth, IResourceProvide
 
     void Update()
     {
+        if (UnityEngine.Input.GetKeyDown(KeyCode.Escape) || UnityEngine.Input.GetKeyDown(KeyCode.P))
+        {
+            _isPaused = !_isPaused;
+            Time.timeScale = _isPaused ? 0f : 1f;
+            playerCamera.ChangeState(_isPaused ? "PauseMenu" : "Gameplay");
+        }
+
+        if (_isPaused) return;
+
         var input = _inputActions.Player;
         var deltaTime = Time.deltaTime;
 
@@ -62,6 +69,7 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth, IResourceProvide
         var characterInput = new CharacterInput
         {
             Rotation = playerCamera.transform.rotation,
+            CameraRotation = playerCamera.GetGameplayCameraWorldRotation(),
             Move = input.Move.ReadValue<Vector2>(),
             Jump = input.Jump.WasPressedThisFrame(),
             JumpSustain = input.Jump.IsPressed(),
