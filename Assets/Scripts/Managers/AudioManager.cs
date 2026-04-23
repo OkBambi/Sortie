@@ -115,17 +115,42 @@ public class AudioManager : MonoBehaviour
 
         if (binding.actionType == EventAudioBinding.AudioActionType.StopLoop)
         {
-            if (!string.IsNullOrEmpty(binding.loopId) && activeLoops.TryGetValue(binding.loopId, out ActiveLoopData data))
-            {
-                if (data != null && data.source != null) data.source.Stop();
-            }
+            StopLoop(binding.loopId);
             return;
         }
 
-        Sound s = binding.sound;
-        if (s == null || s.clips == null || s.clips.Length == 0) return;
+        if (binding.actionType == EventAudioBinding.AudioActionType.StartLoop)
+        {
+            StartLoop(binding.loopId, binding.sound);
+        }
+        else // PlayOneShot
+        {
+            PlaySound(binding.sound);
+        }
+    }
 
-        AudioClip clip = s.clips[UnityEngine.Random.Range(0, s.clips.Length)];
+    public void StopLoop(string loopId)
+    {
+        if (!string.IsNullOrEmpty(loopId) && activeLoops.TryGetValue(loopId, out ActiveLoopData data))
+        {
+            if (data != null && data.source != null) data.source.Stop();
+        }
+    }
+
+    public void StartLoop(string loopId, Sound s)
+    {
+        if (string.IsNullOrEmpty(loopId) || s == null || s.clips == null || s.clips.Length == 0) return;
+
+        AudioClip clip;
+        if (s.playInSeries)
+        {
+            clip = s.clips[s.currentClipIndex];
+            s.currentClipIndex = (s.currentClipIndex + 1) % s.clips.Length;
+        }
+        else
+        {
+            clip = s.clips[UnityEngine.Random.Range(0, s.clips.Length)];
+        }
         if (clip == null) return;
 
         // Apply Variance
@@ -136,45 +161,61 @@ public class AudioManager : MonoBehaviour
         float v = Mathf.Clamp01(s.volume + vRng);
 
         float masterVol = 1f;
-        if (settings != null)
-        {
-            masterVol = s.isMusic ? settings.music : settings.sfx;
-        }
-
+        if (settings != null) masterVol = s.isMusic ? settings.music : settings.sfx;
         float finalVol = v * masterVol;
 
-        if (binding.actionType == EventAudioBinding.AudioActionType.StartLoop)
+        if (!activeLoops.TryGetValue(loopId, out ActiveLoopData loopData) || loopData == null || loopData.source == null)
         {
-            if (string.IsNullOrEmpty(binding.loopId)) return;
-
-            if (!activeLoops.TryGetValue(binding.loopId, out ActiveLoopData loopData) || loopData == null || loopData.source == null)
-            {
-                loopData = new ActiveLoopData { source = gameObject.AddComponent<AudioSource>() };
-                activeLoops[binding.loopId] = loopData;
-            }
-
-            loopData.soundConfig = s;
-            loopData.appliedVolumeRng = vRng;
-
-            loopData.source.clip = clip;
-            loopData.source.pitch = p;
-            loopData.source.volume = finalVol;
-            loopData.source.loop = true;
-
-            if (!loopData.source.isPlaying) loopData.source.Play();
+            loopData = new ActiveLoopData { source = gameObject.AddComponent<AudioSource>() };
+            activeLoops[loopId] = loopData;
         }
-        else // PlayOneShot
-        {
-            AudioSource src = GetAvailableSource();
-            if (src != null)
-            {
-                src.pitch = p;
-                src.volume = finalVol;
 
-                src.clip = clip;
-                src.loop = false;
-                src.Play();
-            }
+        loopData.soundConfig = s;
+        loopData.appliedVolumeRng = vRng;
+
+        loopData.source.clip = clip;
+        loopData.source.pitch = p;
+        loopData.source.volume = finalVol;
+        loopData.source.loop = true;
+
+        if (!loopData.source.isPlaying) loopData.source.Play();
+    }
+
+    public void PlaySound(Sound s)
+    {
+        if (s == null || s.clips == null || s.clips.Length == 0) return;
+
+        AudioClip clip;
+        if (s.playInSeries)
+        {
+            clip = s.clips[s.currentClipIndex];
+            s.currentClipIndex = (s.currentClipIndex + 1) % s.clips.Length;
+        }
+        else
+        {
+            clip = s.clips[UnityEngine.Random.Range(0, s.clips.Length)];
+        }
+        if (clip == null) return;
+
+        // Apply Variance
+        float pRng = UnityEngine.Random.Range(-s.pitchVariance, s.pitchVariance);
+        float vRng = UnityEngine.Random.Range(-s.volumeVariance, s.volumeVariance);
+
+        float p = Mathf.Clamp(s.pitch + pRng, 0.1f, 3f);
+        float v = Mathf.Clamp01(s.volume + vRng);
+
+        float masterVol = 1f;
+        if (settings != null) masterVol = s.isMusic ? settings.music : settings.sfx;
+        float finalVol = v * masterVol;
+
+        AudioSource src = GetAvailableSource();
+        if (src != null)
+        {
+            src.pitch = p;
+            src.volume = finalVol;
+            src.clip = clip;
+            src.loop = false;
+            src.Play();
         }
     }
 
@@ -336,6 +377,7 @@ public class EventAudioBindingDrawer : UnityEditor.PropertyDrawer
             // 5. Draw Sound Config (Only if PlayOneShot or StartLoop)
             if (action == 0 || action == 1)
             {
+                // This draws the Sound class and automatically includes the new bool toggle
                 UnityEditor.EditorGUI.PropertyField(rect, soundProp, true);
             }
 

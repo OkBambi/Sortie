@@ -439,6 +439,7 @@ public class CombatSystem : MonoBehaviour, IResourceProvider
     private IEnumerator ReloadRoutine(WeaponInstance weapon)
     {
         weapon.IsReloading = true;
+        if (weapon.Context.Audio != null) weapon.Context.Audio.PlaySound(weapon.Data.ReloadSound);
         int missingAmmo = weapon.Data.MaxAmmo - weapon.CurrentAmmo;
 
         if (missingAmmo > 0)

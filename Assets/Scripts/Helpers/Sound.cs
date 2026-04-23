@@ -6,6 +6,12 @@ public class Sound
     [Tooltip("Add multiple clips here. The manager will pick a random one each time.")]
     public AudioClip[] clips;
 
+    [Tooltip("If true, clips will play in sequential order. If false, a random clip is chosen each time.")]
+    public bool playInSeries = false;
+
+    [HideInInspector]
+    public int currentClipIndex = 0;
+
     [Range(0f, 1f)]
     public float volume = 1f;
 

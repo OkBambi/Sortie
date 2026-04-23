@@ -47,7 +47,10 @@ public class WeaponInstance
         CurrentAmmo--;
         LastFireTime = Time.time;
 
-        //if (Context.Audio != null) Context.Audio.Play(Data.FireSound);
+        if (Data.FireSound != null && Context.Audio != null)
+        {
+            Context.Audio.PlaySound(Data.FireSound);
+        }
 
         if (Data.EmitterModule != null)
         {
@@ -73,8 +76,9 @@ public class WeaponData : ScriptableObject
     [Tooltip("Controls WHAT happens (e.g., Projectile, Hitscan, Melee)")]
     public WeaponEmitter EmitterModule;
 
-    [Header("Visuals")]
-    public string FireSound = "Shot";
+    [Header("Audio")]
+    public Sound FireSound;
+    public Sound ReloadSound;
 }
 
 // 4. BASE MODULES

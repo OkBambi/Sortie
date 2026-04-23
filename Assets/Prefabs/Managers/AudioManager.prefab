@@ -45,6 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings: {fileID: 0}
+  maxSimultaneousSounds: 30
   soundCategories:
   - categoryName: Player SFX
     bindings: []
