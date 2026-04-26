@@ -13,7 +13,7 @@ public class Spawnpoint : MonoBehaviour
 
     void Start()
     {
-        currentlySpawnedObject = transform.GetChild(0) != null ? transform.GetChild(0).gameObject : null;
+        currentlySpawnedObject = transform.childCount > 0 ? transform.GetChild(0).gameObject : null;
     }
 
     void Update()
