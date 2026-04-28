@@ -13,39 +13,74 @@ public class SortieManager : MonoBehaviour
     public event Action<Objective> OnObjectiveUpdated;
     public event Action<Objective> OnObjectiveCompleted;
 
-    [SerializeField] GameObject Player;
+    [SerializeField] private Player _player;
 
     float _currentScore; //ULTRAKILL
+    float _totalScore;
     float _timeElapsedForSortie;
 
-    void Awake()
+    private void Awake()
     {
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
+            return;
         }
-        else
-        {
-            Instance = this;
-        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
-    void Start()
+    private void Start()
     {
-        Player = GameObject.FindAnyObjectByType<Player>().gameObject;
+        if (_player == null)
+        {
+            _player = FindAnyObjectByType<Player>();
+        }
 
-        //test objective
-        CreateDynamicObjective("test_objective", "Testing Testing", "Get Sabrina's Number", 1);
-        CreateDynamicObjective("kill_test_dummy", "Kill Test Dummies", "Hiyyaa", 3);
-        CreateDynamicObjective("kill_basic_enemy", "Kill Enemies", "Hyuuuaaa", 3);
+        // Test objectives
+        //CreateDynamicObjective("test_objective", "Testing Testing", "Get Sabrina's Number", 1);
+        //CreateDynamicObjective("kill_test_dummy", "Kill Test Dummies", "Hiyyaa", 3);
+        //CreateDynamicObjective("kill_basic_enemy", "Kill Enemies", "Hyuuuaaa", 3);
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.H))
+        
+    }
+
+    public void StartSortie(int level)
+    {
+        _currentScore = 0;
+        _timeElapsedForSortie = 0f;
+
+        activeObjectives.Clear();
+
+        int amountOfSorties = UnityEngine.Random.Range(1, level + 2);
+
+        for (int i = 0; i < amountOfSorties; i++)
         {
-            //update test objective
+            string randomId = $"sortie_task_{level}_{i}";
+            string randomTitle = $"Task {i + 1} (Level {level})";
+            string randomDescription = $"Amaze! Amaze! Amaze!";
+
+            int requiredAmount = UnityEngine.Random.Range(level * 2, (level * 5) + 1);
+
+            CreateDynamicObjective(randomId, randomTitle, randomDescription, requiredAmount);
         }
+
+        Debug.Log($"Started Sortie Level {level} with {amountOfSorties} objectives!");
+    }
+
+    //called when all active sorties are complete
+    public void EndSortie()
+    {
+        _totalScore += _currentScore;
+
+        Debug.Log($"Sortie Complete! Score gained: {_currentScore}. Total Score: {_totalScore}");
+
+        // Clean up active objectives to prepare for the next sortie
+        activeObjectives.Clear();
     }
 
     public void CreateDynamicObjective(string id, string title, string description, int requiredAmount)

@@ -11,33 +11,35 @@ public class Objective
     [SerializeField] private int currentAmount;
     [SerializeField] private bool isComplete;
 
-    public string Id { get => id; private set => id = value; }
-    public string Title { get => title; private set => title = value; }
-    public string Description { get => description; private set => description = value; }
-    public int RequiredAmount { get => requiredAmount; private set => requiredAmount = value; }
-    public int CurrentAmount { get => currentAmount; private set => currentAmount = value; }
-    public bool IsComplete { get => isComplete; private set => isComplete = value; }
+    public string Id => id;
+    public string Title => title;
+    public string Description => description;
+    public int RequiredAmount => requiredAmount;
+    public int CurrentAmount => currentAmount;
+    public bool IsComplete => isComplete;
+
+    public float ProgressPercentage => requiredAmount > 0 ? (float)currentAmount / requiredAmount : 1f;
 
     public Objective(string id, string title, string description, int requiredAmount)
     {
-        Id = id;
-        Title = title;
-        Description = description;
-        RequiredAmount = requiredAmount;
-        CurrentAmount = 0;
-        IsComplete = false;
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.requiredAmount = requiredAmount;
+        this.currentAmount = 0;
+        this.isComplete = false;
     }
 
     public bool AddProgress(int amount)
     {
-        if (IsComplete) return false;
+        if (isComplete) return false;
 
-        CurrentAmount += amount;
+        currentAmount += amount;
 
-        if (CurrentAmount >= RequiredAmount)
+        if (currentAmount >= requiredAmount)
         {
-            CurrentAmount = RequiredAmount;
-            IsComplete = true;
+            currentAmount = requiredAmount;
+            isComplete = true;
             return true;
         }
 

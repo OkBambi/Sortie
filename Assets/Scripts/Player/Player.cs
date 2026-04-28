@@ -42,6 +42,8 @@ public class Player : MonoBehaviour, ITarget, IDamage, IHealth, IResourceProvide
         cameraLean.Initialize();
 
         currentHealth = maxHealth;
+
+        SortieManager.Instance.StartSortie(0); //TESTING
     }
 
     void OnDestroy()
